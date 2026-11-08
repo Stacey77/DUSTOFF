@@ -1,0 +1,6 @@
+{
+  "name": "CivicStack: Federal Affordable Housing Development Platform",
+  "description": "Complete real estate development business platform to model, structure, and fund 10, 15, and 20-unit affordable housing communities with 100% federal & public capital stacks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,153 @@
+import { FundingTactic, ApplicationStep } from '../types';
+
+export const fundingTactics: FundingTactic[] = [
+  {
+    id: 'tactic-site-control',
+    title: 'Lock In Site Control via Contingent Option Agreements',
+    category: 'Site Control',
+    pointsImpact: '+10 to +15 Points (Mandatory Threshold in State QAPs)',
+    description: 'Housing Finance Agencies reject applications without definitive site control. Negotiate an exclusive 270-day purchase option with a nominal deposit ($1,000–$5,000) that is explicitly contingent upon receiving federal funding awards.',
+    actionSteps: [
+      'Include a "Subject to Federal Grant Award" contingency clause in your purchase and sale option agreement.',
+      'Obtain a title commitment showing clear title without restrictive covenants prohibiting multi-family density.',
+      'Order a Phase I Environmental Site Assessment (ESA) immediately to avoid delay in HUD Part 58 NEPA review.',
+      'Secure a letter from local zoning administrator certifying multi-family by-right density or approved variance.',
+    ],
+    statutoryReference: '24 CFR 92.250 & State Qualified Allocation Plan (QAP) Site Readiness Guidelines',
+  },
+  {
+    id: 'tactic-deep-targeting',
+    title: 'Deep Income Targeting (30% & 50% AMI Units)',
+    category: 'Scoring Optimization',
+    pointsImpact: '+15 to +25 Scoring Points',
+    description: 'Federal and state housing agencies prioritize applications that serve extremely low-income (ELI) households. Designating at least 20% to 30% of units at ≤30% AMI unlocks National Housing Trust Fund (HTF) capital and maximum scoring in State QAPs.',
+    actionSteps: [
+      'Pair ≤30% AMI units directly with National Housing Trust Fund (HTF) allocations.',
+      'Reserve 20% of remaining units for ≤50% AMI households to satisfy statutory HUD HOME 24 CFR 92.252(b) requirements.',
+      'Anchor operating income by securing Section 8 Project-Based Vouchers (PBVs) from the local Public Housing Authority.',
+    ],
+    statutoryReference: 'HUD 24 CFR Part 93 (HTF) & 24 CFR 92.252 (HOME Rent Rules)',
+  },
+  {
+    id: 'tactic-chdo-partnership',
+    title: 'Leverage CHDO / Non-Profit General Partner Status',
+    category: 'Scoring Optimization',
+    pointsImpact: '+10 to +18 Set-Aside Points',
+    description: 'Federal law (Title II Cranston-Gonzalez Act) mandates that at least 15% of all federal HOME funds received by a Participating Jurisdiction MUST be set aside for certified Community Housing Development Organizations (CHDOs). Partnering with or forming a CHDO allows accessing non-competitive pools.',
+    actionSteps: [
+      'Form a Joint Venture with a local non-profit or certify your entity as a CHDO if your board meets community representation rules.',
+      'Access special CHDO Operating Expense grants (up to $50,000) and pre-development project loans.',
+      'Compete in dedicated CHDO set-aside funding rounds with significantly lower application ratios.',
+    ],
+    statutoryReference: '24 CFR 92.300 (CHDO Set-Aside Mandate)',
+  },
+  {
+    id: 'tactic-fhlb-bank',
+    title: 'Secure FHLBank Commercial Member Bank Sponsorship',
+    category: 'Community Alignment',
+    pointsImpact: 'Unlocks $450k – $650k in Direct Cash Grants',
+    description: 'The Federal Home Loan Bank (FHLB) Affordable Housing Program (AHP) awards direct grants semi-annually. Commercial banks and community credit unions sponsor applications to earn mandatory Community Reinvestment Act (CRA) examination credits.',
+    actionSteps: [
+      'Meet with the Community Development Officer at a local regional bank or credit union that is an active FHLBank member.',
+      'Pitch a shovel-ready 10 to 20-unit development that provides CRA credit within their assessment area.',
+      'Submit early in the FHLBank Spring or Autumn competitive grant round.',
+      'Structure the AHP funds as a 15-year forgivable grant to wipe out bank debt.',
+    ],
+    statutoryReference: '12 CFR Part 1291 (Federal Housing Finance Agency AHP Regulations)',
+  },
+  {
+    id: 'tactic-clean-energy',
+    title: 'Monetize IRA §45L ($5k/unit) & §48(e) 50% Solar Credits',
+    category: 'Clean Energy Equity',
+    pointsImpact: 'Adds $80k to $350k in Non-Dilutive Capital Stack Equity',
+    description: 'Under the Inflation Reduction Act, multi-family affordable developments certified to DOE Zero Energy Ready Home (ZERH) standards receive $5,000 per unit in cash-transferable credits under IRC §45L, plus a 20% bonus credit on rooftop solar under §48(e) Low-Income Communities.',
+    actionSteps: [
+      'Engage an accredited RESNET HERS energy modeler during preliminary architectural drafting.',
+      'Specify heat-pump HVAC, high-R continuous exterior insulation, and induction kitchen ranges.',
+      'Apply to the DOE/IRS for the Section 48(e) 20% Low-Income Solar Allocation in the competitive annual window.',
+      'Elect direct-pay (IRC §6417 for non-profit/governmental partners) or transfer credits for cash at ~92¢/$1 (IRC §6418).',
+    ],
+    statutoryReference: 'Internal Revenue Code §45L, §48(e), §6417 & §6418',
+  },
+  {
+    id: 'tactic-davis-bacon-10',
+    title: 'Exploit the 10-Unit Davis-Bacon Prevailing Wage Exemption',
+    category: 'Underwriting Compliance',
+    pointsImpact: 'Reduces Hard Construction Labor Overhead by 14% to 18%',
+    description: 'Under federal statute 24 CFR 92.354, Davis-Bacon prevailing wage rules ONLY apply to developments with 12 or more HOME-assisted units. Building a 10-unit pocket community completely bypasses federal prevailing wage rates and weekly certified payroll reporting.',
+    actionSteps: [
+      'Cap HOME-assisted units at 10 to 11 units in your local PJ agreement.',
+      'Solicit bids from competitive open-shop residential general contractors and subcontractors.',
+      'Reallocate the ~15% labor savings into higher developer fee earnings or upgraded exterior architecture.',
+    ],
+    statutoryReference: 'HUD 24 CFR 92.354 & Davis-Bacon Act (40 U.S.C. 3141 et seq.)',
+  },
+];
+
+export const federalApplicationSteps: ApplicationStep[] = [
+  {
+    stepNumber: 1,
+    title: 'Entity Setup, SAM.gov Registration & Local PJ Engagement',
+    entity: 'Federal Treasury (IRS), SAM.gov, and City/County Housing Department',
+    timeline: 'Months 1 – 2',
+    deliverables: [
+      'Single-Purpose LLC Articles of Organization & Operating Agreement',
+      'IRS Employer Identification Number (EIN)',
+      'SAM.gov Active Registration, Unique Entity Identifier (UEI) and CAGE code',
+      'Introductory meeting with City/County Housing Director to verify local HOME/HTF Action Plan priorities',
+    ],
+    keyAdvice: 'Do not wait for NOFAs to drop. Meet with your local Participating Jurisdiction (PJ) during their annual Consolidated Plan public hearings to get your 10–20 unit missing middle project prioritized.',
+  },
+  {
+    stepNumber: 2,
+    title: 'Site Control, Zoning Verification & Part 58 NEPA Review',
+    entity: 'Land Bank / Seller, Municipal Zoning Office, Environmental Consultant',
+    timeline: 'Months 3 – 4',
+    deliverables: [
+      'Executed 270-day Purchase Option Agreement conditioned on federal award',
+      'Phase I Environmental Site Assessment (ESA) with zero unmitigated RECs',
+      'Zoning verification letter confirming by-right density or approved conditional use',
+      'Preliminary architectural site plan, massing study, and unit mix distribution',
+    ],
+    keyAdvice: 'CRITICAL: Never break ground, demolish existing structures, or sign a binding construction contract before HUD environmental clearance is granted (HUD Form 7015.16), or federal funds will be disqualified.',
+  },
+  {
+    stepNumber: 3,
+    title: 'FHLBank Member Bank Sponsorship & PHA Voucher AHAP',
+    entity: 'Commercial Bank Sponsor & Local Public Housing Authority (PHA)',
+    timeline: 'Months 5 – 6',
+    deliverables: [
+      'Executed FHLBank AHP Member Bank Sponsorship Commitment Letter',
+      'PHA Section 8 Project-Based Voucher (PBV) Commitment Letter or executed AHAP',
+      'Preliminary Energy Rating Certificate for IRA Section 45L ($5,000/unit)',
+      'City Council or Board of Commissioners Resolution of Support',
+    ],
+    keyAdvice: 'Securing Project-Based Vouchers (PBVs) is the single most powerful underwriting weapon: it guarantees HUD pays fair market rents, ensuring your pro-forma easily passes HUD Subsidy Layering Review.',
+  },
+  {
+    stepNumber: 4,
+    title: 'Formal NOFA / QAP Application Submission',
+    entity: 'State Housing Finance Agency (HFA) & Local HUD Participating Jurisdiction',
+    timeline: 'Months 7 – 8',
+    deliverables: [
+      '100% Non-Dilutive Capital Stack Pro-Forma (HOME, HTF, AHP, IRA 45L)',
+      'Detailed Hard and Soft Cost Construction Estimates signed by General Contractor',
+      'Developer Capacity & Track Record Narrative (highlighting local partnerships)',
+      'Affirmative Fair Housing Marketing Plan (AFHMP) and Tenant Selection Plan',
+    ],
+    keyAdvice: 'Tailor your application narrative directly to the State QAP scoring rubric. Score every point possible in Site Suitability, Deep Affordability (≤30% AMI), Energy Efficiency, and Readiness to Proceed.',
+  },
+  {
+    stepNumber: 5,
+    title: 'Subsidy Layering Review, Closing & Developer Fee Draw 1',
+    entity: 'State HFA, HUD Field Office, Escrow & Title Company',
+    timeline: 'Months 9 – 11',
+    deliverables: [
+      'HUD 24 CFR 92.250 Subsidy Layering Review Clearance',
+      'Executed Regulatory Agreement (30-Year Affordability Deed Restriction)',
+      'General Contractor GMP (Guaranteed Maximum Price) Contract',
+      'Draw Milestone 1: 30% of Cash Developer Fee paid to Developer HoldCo ($75k – $190k)',
+    ],
+    keyAdvice: 'At financial closing, you collect the first 30% of your Developer Fee in direct cash. You risk zero personal capital, and all construction draws are funded via the federal IDIS payment system.',
+  },
+];
