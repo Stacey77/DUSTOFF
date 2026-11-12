@@ -1,3 +1,4 @@
+var escH = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* =====================================================================
    SYMBIOSIS ENGINE + SYNTHETIC AI COUNCIL
@@ -272,14 +273,14 @@ function localReply(k, q) { const n = N[k], a = AG[k], ins = LINKS.filter(L => L
 async function send(q) {
   if (busy) return; const k = chatK, h = chats[k]; const first = h.length === 0;
   const content = `${first ? agentPrompt(k) + '\n\n' : ''}[Live city state, hour ${S.tick}]\n${JSON.stringify(stateJSON())}\n\nResident says: ${q}`;
-  h.push({ role: 'user', content, ui: q }); renderChat(''); log('you', `To ${AG[k].name}: “${q}”`);
+  h.push({ role: 'user', content, ui: escH(q) }); renderChat(''); log('you', `To ${AG[k].name}: “${escH(q)}”`);
   if (!sample) { const r = localReply(k, q); h.push({ role: 'assistant', content: r }); renderChat(); return; }
   busy = true; const acts = [];
   try {
     const tools = toolsFor(k, false).map(t => ({ ...t, execute: i => { const r = t.execute(i); if (t.name !== 'get_city_state') acts.push(r); return typeof r === 'string' ? r : JSON.stringify(r); } }));
-    const res = await sample(h.map(m => ({ role: m.role, content: m.content })), { cache: false, tools, onText: ({ text }) => renderChat(text) });
-    const ui = res.text + (acts.length ? `<div class="acts">${acts.map(a => `<span>⚙ ${a}</span>`).join('')}</div>` : '');
-    h.push({ role: 'assistant', content: res.text, ui }); log(k, `(to resident) ${res.text.slice(0, 160)}${res.text.length > 160 ? '…' : ''}`, 'ai');
+    const res = await sample(h.map(m => ({ role: m.role, content: m.content })), { cache: false, tools, onText: ({ text }) => renderChat(escH(text)) });
+    const ui = escH(res.text) + (acts.length ? `<div class="acts">${acts.map(a => `<span>⚙ ${a}</span>`).join('')}</div>` : '');
+    h.push({ role: 'assistant', content: res.text, ui }); log(k, `(to resident) ${escH(res.text.slice(0, 160))}${res.text.length > 160 ? '…' : ''}`, 'ai');
   } catch (e) { const r = e.code === 'rate_limited' ? 'I need a moment; the council channel is busy. Try again shortly.' : localReply(k, q); h.push({ role: 'assistant', content: r }); if (e.code === 'not_granted') { sample = null; document.body.classList.remove('hasAI'); } }
   busy = false; renderChat();
 }
@@ -297,7 +298,7 @@ document.getElementById('convene').onclick = async () => {
     const res = await sample(prompt, { cache: false, modelTier: 'default', tools: toolsFor(null, true).map(t => ({ ...t, execute: i => { const r = t.execute(i); return typeof r === 'string' ? r : JSON.stringify(r); } })) });
     const byName = Object.fromEntries(KEYS.map(k => [AG[k].name, k]));
     res.text.split('\n').map(s => s.trim()).filter(Boolean).reverse().forEach(line => { const m = line.match(/^\**\s*(AQUA|VERDA|SOLIS|LOGOS|HUMUS|SALUS|SYLVA|AGORA|MA'?AT)\**\s*:\s*(.+)$/i);
-      if (m) { const nm = m[1].toUpperCase().replace("'", ''); log(nm === 'MAAT' ? 'maat' : byName[nm], m[2], 'ai'); } });
+      if (m) { const nm = m[1].toUpperCase().replace("'", ''); log(nm === 'MAAT' ? 'maat' : byName[nm], escH(m[2]), 'ai'); } });
   } catch (e) { log('maat', e.code === 'rate_limited' ? 'The council is busy; try again in a moment.' : 'The AI council could not convene right now, so the built-in stewards keep working.'); if (e.code === 'not_granted') { sample = null; document.body.classList.remove('hasAI'); } }
   btn.disabled = false; btn.textContent = 'Convene the AI Council';
 };

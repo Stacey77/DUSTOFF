@@ -244,7 +244,7 @@ function frame() {
     if (keys.KeyD || keys.ArrowRight) camera.position.addScaledVector(rt, sp);
     if (mode === 'fly') { if (keys.KeyE) camera.position.y += sp; if (keys.KeyQ) camera.position.y -= sp; camera.position.y = Math.max(3, Math.min(500, camera.position.y)); }
     else camera.position.y = 3.2 + Math.sin(T * 9) * .05 * ((keys.KeyW || keys.KeyS || keys.ArrowUp || keys.ArrowDown) ? 1 : 0);
-    const lim = 420; camera.position.x = Math.max(-lim, Math.min(lim, camera.position.x)); camera.position.z = Math.max(-lim, Math.min(lim, camera.position.z));
+    { const nat = !!window.NATURE, x0 = nat ? -900 : -420, x1 = nat ? 520 : 420, z0 = nat ? -640 : -420, z1 = nat ? 920 : 420; camera.position.x = Math.max(x0, Math.min(x1, camera.position.x)); camera.position.z = Math.max(z0, Math.min(z1, camera.position.z)); }
     eul.set(pitch, yaw, 0); camera.quaternion.setFromEuler(eul);
   } else if (mode === 'ride') {
     const p = pods[0], a = loop.getPointAt(p.t), b = loop.getPointAt((p.t + .01) % 1); camera.position.set(a.x, a.y + 5, a.z);

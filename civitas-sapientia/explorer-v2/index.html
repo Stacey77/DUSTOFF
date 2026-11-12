@@ -322,6 +322,7 @@ body.eng #eng{display:flex}body.eng #info,body.eng #infoClose{display:none}
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
+var escH = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -1181,7 +1182,7 @@ function frame() {
     if (keys.KeyD || keys.ArrowRight) camera.position.addScaledVector(rt, sp);
     if (mode === 'fly') { if (keys.KeyE) camera.position.y += sp; if (keys.KeyQ) camera.position.y -= sp; camera.position.y = Math.max(3, Math.min(500, camera.position.y)); }
     else camera.position.y = 1.7 + Math.sin(T * 9) * .05 * ((keys.KeyW || keys.KeyS || keys.ArrowUp || keys.ArrowDown) ? 1 : 0);
-    const lim = 420; camera.position.x = Math.max(-lim, Math.min(lim, camera.position.x)); camera.position.z = Math.max(-lim, Math.min(lim, camera.position.z));
+    { const nat = !!window.NATURE, x0 = nat ? -900 : -420, x1 = nat ? 520 : 420, z0 = nat ? -640 : -420, z1 = nat ? 920 : 420; camera.position.x = Math.max(x0, Math.min(x1, camera.position.x)); camera.position.z = Math.max(z0, Math.min(z1, camera.position.z)); }
     eul.set(pitch, yaw, 0); camera.quaternion.setFromEuler(eul);
   } else if (mode === 'ride') {
     const p = pods[0], a = loop.getPointAt(p.t), b = loop.getPointAt((p.t + .01) % 1); camera.position.set(a.x, a.y + 5, a.z);
@@ -1490,14 +1491,14 @@ function localReply(k, q) { const n = N[k], a = AG[k], ins = LINKS.filter(L => L
 async function send(q) {
   if (busy) return; const k = chatK, h = chats[k]; const first = h.length === 0;
   const content = `${first ? agentPrompt(k) + '\n\n' : ''}[Live city state, hour ${S.tick}]\n${JSON.stringify(stateJSON())}\n\nResident says: ${q}`;
-  h.push({ role: 'user', content, ui: q }); renderChat(''); log('you', `To ${AG[k].name}: “${q}”`);
+  h.push({ role: 'user', content, ui: escH(q) }); renderChat(''); log('you', `To ${AG[k].name}: “${escH(q)}”`);
   if (!sample) { const r = localReply(k, q); h.push({ role: 'assistant', content: r }); renderChat(); return; }
   busy = true; const acts = [];
   try {
     const tools = toolsFor(k, false).map(t => ({ ...t, execute: i => { const r = t.execute(i); if (t.name !== 'get_city_state') acts.push(r); return typeof r === 'string' ? r : JSON.stringify(r); } }));
-    const res = await sample(h.map(m => ({ role: m.role, content: m.content })), { cache: false, tools, onText: ({ text }) => renderChat(text) });
-    const ui = res.text + (acts.length ? `<div class="acts">${acts.map(a => `<span>⚙ ${a}</span>`).join('')}</div>` : '');
-    h.push({ role: 'assistant', content: res.text, ui }); log(k, `(to resident) ${res.text.slice(0, 160)}${res.text.length > 160 ? '…' : ''}`, 'ai');
+    const res = await sample(h.map(m => ({ role: m.role, content: m.content })), { cache: false, tools, onText: ({ text }) => renderChat(escH(text)) });
+    const ui = escH(res.text) + (acts.length ? `<div class="acts">${acts.map(a => `<span>⚙ ${a}</span>`).join('')}</div>` : '');
+    h.push({ role: 'assistant', content: res.text, ui }); log(k, `(to resident) ${escH(res.text.slice(0, 160))}${res.text.length > 160 ? '…' : ''}`, 'ai');
   } catch (e) { const r = e.code === 'rate_limited' ? 'I need a moment; the council channel is busy. Try again shortly.' : localReply(k, q); h.push({ role: 'assistant', content: r }); if (e.code === 'not_granted') { sample = null; document.body.classList.remove('hasAI'); } }
   busy = false; renderChat();
 }
@@ -1515,7 +1516,7 @@ document.getElementById('convene').onclick = async () => {
     const res = await sample(prompt, { cache: false, modelTier: 'default', tools: toolsFor(null, true).map(t => ({ ...t, execute: i => { const r = t.execute(i); return typeof r === 'string' ? r : JSON.stringify(r); } })) });
     const byName = Object.fromEntries(KEYS.map(k => [AG[k].name, k]));
     res.text.split('\n').map(s => s.trim()).filter(Boolean).reverse().forEach(line => { const m = line.match(/^\**\s*(AQUA|VERDA|SOLIS|LOGOS|HUMUS|SALUS|SYLVA|AGORA|MA'?AT)\**\s*:\s*(.+)$/i);
-      if (m) { const nm = m[1].toUpperCase().replace("'", ''); log(nm === 'MAAT' ? 'maat' : byName[nm], m[2], 'ai'); } });
+      if (m) { const nm = m[1].toUpperCase().replace("'", ''); log(nm === 'MAAT' ? 'maat' : byName[nm], escH(m[2]), 'ai'); } });
   } catch (e) { log('maat', e.code === 'rate_limited' ? 'The council is busy; try again in a moment.' : 'The AI council could not convene right now, so the built-in stewards keep working.'); if (e.code === 'not_granted') { sample = null; document.body.classList.remove('hasAI'); } }
   btn.disabled = false; btn.textContent = 'Convene the AI Council';
 };
@@ -1569,9 +1570,9 @@ function stressOf(b, k, epi) {
   return Math.max(0, (.35 + hf * .4) * v * r + n);
 }
 let flood = null, quakeRing = null;
-function runScenario(k) {
+function runScenario(k, epiIn) {
   if (E.run) return 'A test is already running';
-  const epi = k === 'quake' ? [(rnd() - .5) * 320, (rnd() - .5) * 320] : k === 'typhoon' ? [0, 0, rnd() * Math.PI * 2] : [0, 0];
+  const epi = epiIn ? epiIn.slice() : k === 'quake' ? [(rnd() - .5) * 320, (rnd() - .5) * 320] : k === 'typhoon' ? [0, 0, rnd() * Math.PI * 2] : [0, 0];
   BL.forEach(b => { b.stress = stressOf(b, k, epi); b.tinted = false; });
   E.scen = k; E.run = { k, t: 0, epi, dur: 3 };
   if (k === 'quake') { E.shake = 2.6; quakeRing = new THREE.Mesh(new THREE.RingGeometry(1, 3, 96), new THREE.MeshBasicMaterial({ color: 0xff6a3a, transparent: true, opacity: .9, side: THREE.DoubleSide })); quakeRing.rotation.x = -Math.PI / 2; quakeRing.position.set(epi[0], 1, epi[1]); scene.add(quakeRing); }
@@ -1582,14 +1583,14 @@ function runScenario(k) {
 }
 function finishScenario() {
   const k = E.scen, c = { safe: 0, monitor: 0, retrofit: 0 }; BL.forEach(b => { c[band(b.stress)]++; b.tinted = true; window.BLD.setColor(b, col3(b.stress)); });
-  E.report = { k, c, top: BL.slice().sort((a, b) => b.stress - a.stress).slice(0, 6) }; E.run = null;
+  E.report = { k, c, epi: E.run && E.run.epi, top: BL.slice().sort((a, b) => b.stress - a.stress).slice(0, 6) }; E.run = null;
   if (quakeRing) { scene.remove(quakeRing); quakeRing = null; }
   renderCivil(); return summary();
 }
 const summary = () => { if (!E.report) return 'No stress test has been run yet.'; const r = E.report;
   return `${SCEN[r.k].n}: ${r.c.safe} safe, ${r.c.monitor} monitor, ${r.c.retrofit} need retrofit (of ${BL.length}). Most stressed: ${r.top.slice(0, 4).map(b => `${b.name} ${(b.stress * 100).toFixed(0)}% (${b.type})`).join(', ')}.`; };
-function applyRetrofits() { if (!E.report) return 'Run a stress test first.'; const k = E.report.k; let n = 0; BL.forEach(b => { if (b.stress >= .35 && !b.retro[k]) { b.retro[k] = true; n++; } });
-  E.report = null; if (flood) flood.visible = false; setTimeout(() => runScenario(k), 300); return `Applied AI-designed retrofits to ${n} structures for ${SCEN[k].n}. Re-running the test to verify…`; }
+function applyRetrofits() { if (E.run) return 'A test is running; wait for it to finish before applying retrofits.'; if (!E.report) return 'Run a stress test first.'; const k = E.report.k, epi = E.report.epi; let n = 0; BL.forEach(b => { if (b.stress >= .35 && !b.retro[k]) { b.retro[k] = true; n++; } });
+  E.report = null; if (flood) flood.visible = false; runScenario(k, epi); return `Applied AI-designed retrofits to ${n} structures for ${SCEN[k].n}. Re-running the same test (same hazard) to verify…`; }
 function clearCivil() { E.scen = null; E.report = null; BL.forEach(b => b.tinted = false); window.BLD.resetColors(); if (flood) flood.visible = false; stopCFD(); renderCivil(); }
 function inspect(b) {
   E.insp = b; window.BLD.highlight(b); setMode('orbit');
@@ -1687,8 +1688,9 @@ BL.forEach(b => { for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz
 const ps = []; function seedP(i, dir, all) { const dx = Math.cos(dir), dz = Math.sin(dir); const s = (rnd() - .5) * 560, back = all ? (rnd() - .5) * 520 : -280;
   ps[i] = { x: all ? (rnd() - .5) * 520 : 0, z: all ? (rnd() - .5) * 520 : 0, y: 3 + rnd() * (all ? 40 : 60), sp: 1 };
   if (!all) { ps[i].x = -dx * 260 - dz * s; ps[i].z = -dz * 260 + dx * s; } }
-function startCFD(deg, speed = 1, typhoon = false) { const dir = deg * Math.PI / 180; E.cfd = { dir, speed, typhoon, hot: new Map(), t: 0 }; for (let i = 0; i < NP; i++) seedP(i, dir, true); cfdPts.visible = true; }
-function stopCFD() { E.cfd = null; cfdPts.visible = false; }
+var windT = null, windSeq = 0;
+function startCFD(deg, speed = 1, typhoon = false) { clearTimeout(windT); windSeq++; const dir = deg * Math.PI / 180; E.cfd = { dir, speed, typhoon, hot: new Map(), t: 0 }; for (let i = 0; i < NP; i++) seedP(i, dir, true); cfdPts.visible = true; }
+function stopCFD() { clearTimeout(windT); windSeq++; E.cfd = null; cfdPts.visible = false; }
 function cfdStep(dt) { const C = E.cfd, dx = Math.cos(C.dir), dz = Math.sin(C.dir), U = 38 * C.speed; C.t += dt;
   for (let i = 0; i < NP; i++) { const p = ps[i]; let vx = dx, vz = dz, acc = 1;
     const near = grid.get(gk(p.x, p.z)); if (near) for (const b of near) { if (p.y > b.h + 4) continue; const rx = p.x - b.x, rz = p.z - b.z, R = Math.max(b.w, b.d) * .75 + 3, d = Math.hypot(rx, rz);
@@ -1700,8 +1702,8 @@ function cfdStep(dt) { const C = E.cfd, dx = Math.cos(C.dir), dz = Math.sin(C.di
     cp[i * 3] = p.x; cp[i * 3 + 1] = p.y; cp[i * 3 + 2] = p.z; const s = Math.min(1, (acc - 1) * 1.2);
     cc[i * 3] = .45 + s * .55; cc[i * 3 + 1] = .75 + s * .1 - s * s * .35; cc[i * 3 + 2] = 1 - s * .75; }
   cfdGeo.attributes.position.needsUpdate = true; cfdGeo.attributes.color.needsUpdate = true; }
-function windStudy(deg = 315, speed = 1) { startCFD(deg, speed); flyTo([0, 330, 360], [0, 0, 0]); controls.autoRotate = false;
-  setTimeout(() => { const hot = [...E.cfd?.hot || []].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => BL[id]);
+function windStudy(deg = 315, speed = 1) { startCFD(deg, speed); flyTo([0, 330, 360], [0, 0, 0]); controls.autoRotate = false; const id = windSeq, cfd = E.cfd;
+  windT = setTimeout(() => { if (id !== windSeq || E.cfd !== cfd) return; const hot = [...E.cfd?.hot || []].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => BL[id]);
     E.windRep = `Wind from ${deg}° at ${(speed * 6).toFixed(0)} m/s. The spine, canals and ring roads act as ventilation corridors, consistent with the Feng Shui siting. Pedestrian wind-comfort hotspots (corner acceleration): ${hot.map(b => b.name + ' (' + b.h.toFixed(0) + ' m)').join(', ') || 'none significant'}. Recommendation: podium canopies and street trees at those corners.`;
     renderSci(); aiLog('sci', E.windRep); }, 3500); return `Running wind study from ${deg}°…`; }
 // --- generative tower ---
@@ -1714,7 +1716,7 @@ function scoreDesign(d) { const h = d.height, area = h / 3.6 * 90;
   const cost = Math.round(3200 + h * 9 + d.twist * 12 + d.timber * 4 + d.gardens * 10), bio = Math.round(d.gardens * 1.4 + d.timber * .2);
   const score = Math.round(Math.max(0, Math.min(100, 100 - (carbon - 150) * .12 - (eui - 40) * .5 - wind * .25 + (day - 60) * .3 - (cost - 3500) * .004 + bio * .25)));
   return { carbon, eui, wind, day, cost, bio, score, floors: Math.round(h / 3.6), people: Math.round(area * h / 3.6 / 28 / 3) }; }
-function buildTower(d) { if (tower) { scene.remove(tower); tower.traverse(o => o.geometry && o.geometry.dispose()); }
+function buildTower(d) { if (tower) { scene.remove(tower); const mats = new Set(); tower.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) [].concat(o.material).forEach(m => mats.add(m)); }); mats.forEach(m => m.dispose()); }
   tower = new THREE.Group(); tower.position.copy(SITE); const n = Math.round(d.height / 4), seg = d.form === 'hex' ? 6 : d.form === 'round' ? 28 : 4;
   const tm = new THREE.MeshStandardMaterial({ color: new THREE.Color().lerpColors(new THREE.Color(0xdfe6ea), new THREE.Color(0xc89a62), d.timber / 100), roughness: .6 });
   const gm = new THREE.MeshStandardMaterial({ color: 0x14303e, emissive: 0x3aa0d0, emissiveIntensity: .7, metalness: .5, roughness: .2, transparent: true, opacity: .9 });
@@ -1786,7 +1788,7 @@ const hist = { civil: [], mech: [], sci: [], elec: [] };
 function aiLog(k, text, who = 'sys') { hist[k].push({ who, text }); renderAI(k); }
 function renderAI(k) { const el = $(`#ai-${k} .log`); el.innerHTML = hist[k].slice(-12).map(m => `<div class="m ${m.who}">${m.text}</div>`).join(''); el.scrollTop = el.scrollHeight; }
 async function ask(k, q) {
-  const P = PERS[k]; aiLog(k, q, 'user');
+  const P = PERS[k]; aiLog(k, escH(q), 'user');
   if (!sample) { const t = TOOLS[k]; let r;
     if (/quake|earthquake|seismic/i.test(q) && k === 'civil') r = runScenario('quake'); else if (/wind|typhoon/i.test(q) && k === 'civil') r = runScenario('typhoon'); else if (/flood/i.test(q) && k === 'civil') r = runScenario('flood'); else if (/retrofit|fix/i.test(q) && k === 'civil') r = applyRetrofits();
     else if (k === 'mech') { const bad = E.assets.filter(a => stAsset(a) !== 'ok'); r = /repair|fix|dispatch/i.test(q) && bad[0] ? dispatch(bad[0].id) : bad.length ? `${bad.length} assets need attention: ${bad.map(a => `${a.id} ${a.n} (${stAsset(a)})`).join(', ')}. Ask me to repair them.` : 'All machines nominal.'; }
@@ -1799,8 +1801,8 @@ async function ask(k, q) {
   const el = $(`#ai-${k} .log`); const live = document.createElement('div'); live.className = 'm ai'; live.innerHTML = `<b>${P.name}</b> <span class="dots">working</span>`; el.appendChild(live); el.scrollTop = el.scrollHeight;
   try { const acts = [];
     const tools = TOOLS[k].map(t => ({ ...t, execute: async i => { const r = await t.execute(i); acts.push(t.name); const s = typeof r === 'string' ? r : JSON.stringify(r); return s; } }));
-    const res = await sample(prompt, { cache: false, tools, onText: ({ text }) => { live.innerHTML = `<b>${P.name}</b> ${text}`; el.scrollTop = el.scrollHeight; } });
-    live.remove(); aiLog(k, `<b>${P.name}</b> ${res.text}${acts.length ? `<div class="acts">${acts.map(a => `<span>⚙ ${a}</span>`).join('')}</div>` : ''}`, 'ai');
+    const res = await sample(prompt, { cache: false, tools, onText: ({ text }) => { live.innerHTML = `<b>${P.name}</b> ${escH(text)}`; el.scrollTop = el.scrollHeight; } });
+    live.remove(); aiLog(k, `<b>${P.name}</b> ${escH(res.text)}${acts.length ? `<div class="acts">${acts.map(a => `<span>⚙ ${a}</span>`).join('')}</div>` : ''}`, 'ai');
   } catch (e) { live.remove(); aiLog(k, `${P.name}: ${e.code === 'rate_limited' ? 'The channel is busy; try again shortly.' : 'Live AI is unavailable right now. Use the controls above, or ask again.'}`, 'ai'); if (e.code === 'not_granted') sample = null; }
 }
 window.ENG_ASK = ask; window.ENG_AILOG = aiLog;
@@ -2240,7 +2242,7 @@ let acc = 0;
 window.LIFE = { frame(dt, T) {
   const vis = layers.people !== false; Object.values(IM).forEach(m => m.visible = vis);
   // only animate when the camera is near the coast or high enough to see it
-  const near = Math.hypot(camera.position.x + 460, camera.position.z) < 900; acc += dt; if (!vis || (!near && acc < .3)) return; const st = acc; acc = 0;
+  const near = Math.hypot(camera.position.x + 460, camera.position.z) < 900; if (!vis) { acc = 0; return; } acc += dt; if (!near && acc < .3) return; const st = Math.min(acc, .5); acc = 0;
   for (let i = 0; i < N; i++) { const p = P[i]; let x, y = 0, z, yaw = 0, sw = 0, lie = false, sink = 0;
     if (p.k === 'walk') { p.z += p.dir * p.sp * st; if (Math.abs(p.z) > 760) p.dir *= -1; x = beachX(p.z, p.f); z = p.z; yaw = p.dir > 0 ? 0 : Math.PI; p.ph += st * p.sp * 5.5; sw = Math.sin(p.ph) * .5; }
     else if (p.k === 'lie') { x = beachX(p.z, p.f); z = p.z; lie = true; yaw = p.ry; }

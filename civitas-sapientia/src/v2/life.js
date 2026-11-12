@@ -50,7 +50,7 @@ let acc = 0;
 window.LIFE = { frame(dt, T) {
   const vis = layers.people !== false; Object.values(IM).forEach(m => m.visible = vis);
   // only animate when the camera is near the coast or high enough to see it
-  const near = Math.hypot(camera.position.x + 460, camera.position.z) < 900; acc += dt; if (!vis || (!near && acc < .3)) return; const st = acc; acc = 0;
+  const near = Math.hypot(camera.position.x + 460, camera.position.z) < 900; if (!vis) { acc = 0; return; } acc += dt; if (!near && acc < .3) return; const st = Math.min(acc, .5); acc = 0;
   for (let i = 0; i < N; i++) { const p = P[i]; let x, y = 0, z, yaw = 0, sw = 0, lie = false, sink = 0;
     if (p.k === 'walk') { p.z += p.dir * p.sp * st; if (Math.abs(p.z) > 760) p.dir *= -1; x = beachX(p.z, p.f); z = p.z; yaw = p.dir > 0 ? 0 : Math.PI; p.ph += st * p.sp * 5.5; sw = Math.sin(p.ph) * .5; }
     else if (p.k === 'lie') { x = beachX(p.z, p.f); z = p.z; lie = true; yaw = p.ry; }

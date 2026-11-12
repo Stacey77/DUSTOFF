@@ -24,7 +24,7 @@ section{padding:88px 0;border-bottom:2px dashed var(--line)}
 h2{font-size:46px;line-height:1.05;margin-bottom:14px}
 .lead{font-size:18px;color:var(--ink2);max-width:780px}
 .card{background:#fff;border:2px solid var(--ink);border-radius:18px;padding:20px;box-shadow:6px 6px 0 var(--ink)}
-.grid{display:grid;gap:18px}.g2{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.g4{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.grid{display:grid;gap:18px}.g2{grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}.g4{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))}
 .tag{display:inline-block;font:500 11px "IBM Plex Mono",monospace;padding:3px 9px;border-radius:99px;border:1.5px solid var(--ink);margin:2px 4px 2px 0;background:var(--paper)}
 .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 18px}
 .tabs button{font:600 14px "Space Grotesk";padding:9px 16px;border-radius:99px;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
@@ -357,7 +357,7 @@ function showTier(i) { const t = TIERS[i]; $('#tierInfo').innerHTML = `<div clas
   const pos = e => { const r = svg.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
   svg.addEventListener('pointerdown', e => { const g = e.target.closest('g[data-i]'); if (g) { drag = +g.dataset.i; svg.setPointerCapture(e.pointerId); } });
   svg.addEventListener('pointermove', e => { const [x, y] = pos(e); if (drag !== null) { P[drag].x = x; P[drag].y = y; } else { const g = e.target.closest('g[data-i]'); hover = g ? +g.dataset.i : -1; } });
-  svg.addEventListener('pointerup', () => drag = null);
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => svg.addEventListener(ev, () => { drag = null; }));
   for (let k = 0; k < 700; k++) step(); draw(); let n = 0; (function loop() { step(); draw(); if (++n < 600) requestAnimationFrame(loop); else setInterval(() => { step(); draw(); }, 80); })(); })();
 
 /* ================= 2D · SPATIAL ================= */
