@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Civitas Sapientia — Development Vision 2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#13213c;--ink2:#2c3c5c;--cream:#fff6e6;--paper:#fbf0dc;--teal:#16a39a;--aqua:#5fd6cf;--coral:#ff6b4a;--mustard:#f4b13e;--rose:#e85a8a;--iron:#2a2a2e;--brass:#b8893a;--mute:#6b7487;--line:#e7d7bb}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--cream);color:var(--ink);font:16px/1.6 "Space Grotesk",system-ui,sans-serif}
+h1,h2,h3,.disp{font-family:Righteous,cursive;font-weight:400;letter-spacing:.01em}
+.mono{font-family:"IBM Plex Mono",monospace}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+nav{position:sticky;top:0;z-index:30;background:rgba(19,33,60,.96);backdrop-filter:blur(8px)}
+nav .wrap{display:flex;gap:18px;align-items:center;height:56px;overflow-x:auto}
+nav b{font-family:Righteous;color:var(--mustard);font-size:19px;font-weight:400;white-space:nowrap}
+nav a{color:#c9d3e6;text-decoration:none;font-size:13.5px;white-space:nowrap}nav a:hover{color:#fff}
+nav .go{background:var(--coral);color:#fff;padding:6px 12px;border-radius:99px;font-weight:600}
+section{padding:88px 0;border-bottom:2px dashed var(--line)}
+.eyebrow{font:500 12px "IBM Plex Mono",monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.eyebrow:before{content:"✦";color:var(--coral)}
+h2{font-size:46px;line-height:1.05;margin-bottom:14px}
+.lead{font-size:18px;color:var(--ink2);max-width:780px}
+.card{background:#fff;border:2px solid var(--ink);border-radius:18px;padding:20px;box-shadow:6px 6px 0 var(--ink)}
+.grid{display:grid;gap:18px}.g2{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.g4{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.tag{display:inline-block;font:500 11px "IBM Plex Mono",monospace;padding:3px 9px;border-radius:99px;border:1.5px solid var(--ink);margin:2px 4px 2px 0;background:var(--paper)}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 18px}
+.tabs button{font:600 14px "Space Grotesk";padding:9px 16px;border-radius:99px;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+.tabs button.on{background:var(--ink);color:var(--mustard)}
+/* hero */
+.hero{background:linear-gradient(180deg,#13213c 0%,#2c3c6c 46%,#ff9a6a 82%,#ffd59a 100%);color:#fff;padding:70px 0 0;position:relative;overflow:hidden;border:0}
+.hero h1{font-size:clamp(46px,7vw,96px);line-height:.95;margin:12px 0 18px;text-shadow:4px 4px 0 rgba(0,0,0,.25)}
+.hero h1 span{color:var(--mustard)}
+.hero .lead{color:#e6ecf8}
+.hero .eyebrow{color:var(--aqua)}
+.hero svg.scene{display:block;width:100%;height:auto;margin-top:34px}
+.pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+.pills a{font:600 13px "Space Grotesk";color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:99px;padding:8px 14px;text-decoration:none;box-shadow:3px 3px 0 var(--ink)}
+.pills a b{color:var(--coral);margin-right:6px}
+/* atlas */
+.case{padding:0;overflow:hidden}
+.case svg{display:block;width:100%;height:auto;background:var(--paper);border-bottom:2px solid var(--ink)}
+.case .cb{padding:14px 16px 16px}
+.case h3{font-size:22px;line-height:1.1}
+.case .pl{font:500 11px "IBM Plex Mono";color:var(--teal);text-transform:uppercase;letter-spacing:.08em}
+.case p{font-size:13.5px;margin-top:8px;color:var(--ink2)}
+.case p b{color:var(--coral)}
+.synth{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;margin-top:30px}
+@media(max-width:900px){.synth{grid-template-columns:1fr}}
+.dna{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.dna div{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;background:#fff;font-size:13.5px}
+.dna b{display:block;font-family:Righteous;font-weight:400;font-size:17px;color:var(--teal)}
+/* indicators */
+.ind{display:grid;grid-template-columns:330px 1fr;gap:22px;margin-top:24px}
+@media(max-width:900px){.ind{grid-template-columns:1fr}}
+.sl{margin-bottom:14px}.sl label{display:flex;justify-content:space-between;font-size:14px;font-weight:600}.sl label span{font-family:"IBM Plex Mono";color:var(--coral)}
+input[type=range]{width:100%;accent-color:var(--coral)}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}.presets button{font:600 12px "Space Grotesk";padding:6px 10px;border-radius:99px;border:2px solid var(--ink);background:var(--paper);cursor:pointer}
+.score{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.score div{border:2px solid var(--ink);border-radius:12px;padding:10px;text-align:center;background:#fff}
+.score b{display:block;font:400 34px Righteous}.score span{font:500 11px "IBM Plex Mono";color:var(--mute)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1.5px solid var(--line);vertical-align:top}
+th{font:500 11px "IBM Plex Mono";color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+td.t{font-family:"IBM Plex Mono";color:var(--teal);white-space:nowrap}
+/* pyramid */
+.pyr{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:center}
+@media(max-width:900px){.pyr{grid-template-columns:1fr}}
+.tier{cursor:pointer;transition:transform .15s}.tier:hover{transform:translateX(4px)}
+#tierInfo h3{font-size:28px}
+/* network */
+#net{width:100%;height:auto;background:var(--paper);border-radius:14px;border:2px solid var(--ink)}
+/* spatial */
+.sp{display:grid;grid-template-columns:1fr 360px;gap:22px}
+@media(max-width:900px){.sp{grid-template-columns:1fr}}
+.leg{display:grid;gap:8px}.leg button{display:flex;gap:10px;align-items:center;text-align:left;border:2px solid var(--ink);border-radius:12px;background:#fff;padding:9px 12px;font:500 13.5px "Space Grotesk";cursor:pointer}
+.leg button i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);flex:none}
+.leg button.on{background:var(--ink);color:#fff}
+/* forms */
+.motif svg{width:64px;height:64px;display:block;margin-bottom:8px}
+.motif h3{font-size:20px}.motif p{font-size:13.5px;color:var(--ink2)}
+.scene2{padding:0;overflow:hidden}.scene2 svg{display:block;width:100%;height:auto}
+.scene2 .cb{padding:14px 18px}
+.scene2 h3{font-size:24px}
+.pill3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+@media(max-width:900px){.pill3{grid-template-columns:1fr}}
+.pill3 .card h3{font-size:26px}
+.pill3 ul{padding-left:18px;font-size:14px;color:var(--ink2)}.pill3 li{margin:4px 0}
+.trl{display:inline-block;width:80px;height:8px;border-radius:9px;background:var(--line);overflow:hidden;vertical-align:middle}.trl i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--mustard))}
+/* scenarios */
+.scn{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+@media(max-width:900px){.scn{grid-template-columns:1fr}}
+.scn svg{width:100%;height:auto;border-radius:16px;border:2px solid var(--ink);background:linear-gradient(#bfe9f2,#fff6e6)}
+.scn h3{font-size:34px;line-height:1.05}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.meta div{border:2px solid var(--ink);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--mute);background:#fff}.meta b{display:block;color:var(--ink);font-size:14px}
+.flow{list-style:none;counter-reset:s}.flow li{counter-increment:s;padding:8px 0 8px 40px;position:relative;font-size:14.5px;border-bottom:1.5px dashed var(--line)}
+.flow li:before{content:counter(s);position:absolute;left:0;top:7px;width:28px;height:28px;border-radius:50%;background:var(--mustard);border:2px solid var(--ink);display:grid;place-items:center;font:600 12px "IBM Plex Mono"}
+.kp{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.kp span{background:var(--ink);color:#fff;border-radius:10px;padding:6px 10px;font-size:12.5px}.kp b{color:var(--mustard)}
+.cta{display:inline-block;margin-top:16px;background:var(--coral);color:#fff;font-weight:700;padding:11px 18px;border-radius:12px;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);text-decoration:none}
+/* anims */
+@keyframes drive{from{transform:translateX(-140px)}to{transform:translateX(640px)}}
+@keyframes fly{0%{transform:translate(-80px,20px)}50%{transform:translate(260px,-14px)}100%{transform:translate(620px,10px)}}
+@keyframes bob{50%{transform:translateY(-6px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{50%{opacity:.25}}
+@keyframes sweep{from{transform:rotate(-35deg)}to{transform:rotate(35deg)}}
+@keyframes arm{50%{transform:rotate(-28deg)}}
+@keyframes drop{0%,30%{transform:translateY(0)}70%,100%{transform:translateY(58px)}}
+@keyframes pulse{0%{r:6;opacity:.9}100%{r:42;opacity:0}}
+@keyframes train{from{transform:translateX(-520px)}to{transform:translateX(1500px)}}
+.a-drive{animation:drive 7s linear infinite}.a-fly{animation:fly 8s ease-in-out infinite}.a-bob{animation:bob 2.6s ease-in-out infinite}.a-spin{transform-box:fill-box;transform-origin:center;animation:spin 6s linear infinite}
+.a-blink{animation:blink 1.6s ease-in-out infinite}.a-sweep{transform-box:fill-box;transform-origin:left center;animation:sweep 1.4s ease-in-out infinite alternate}.a-arm{transform-box:fill-box;transform-origin:bottom center;animation:arm 2.4s ease-in-out infinite}
+.a-drop{animation:drop 3s ease-in infinite}.a-pulse{animation:pulse 2s ease-out infinite}.a-train{animation:train 14s linear infinite}
+@media(prefers-reduced-motion:reduce){[class^="a-"],[class*=" a-"]{animation:none!important}}
+footer{background:var(--ink);color:#c9d3e6;padding:40px 0;font-size:13.5px}footer a{color:var(--mustard)}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <b>Civitas Sapientia 2.0</b>
+  <a href="#atlas">1 · Science City Atlas</a><a href="#ecosystem">2 · AI Ecosystem</a><a href="#forms">3 · Urban Forms</a><a href="#scenarios">4 · AI Scenarios</a><a href="#roadmap">Roadmap</a>
+  <a class="go" href="../explorer-v2/index.html">Enter the 3D city ↗</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">Development Vision 2.0 · AI Innovation City</div>
+  <h1>The Rail Age meets<br>the <span>Space Age</span>.</h1>
+  <p class="lead">Civitas Sapientia is an AI city where heritage railways, streamlined maglevs, saucer-topped sky homes and flying cars share one radial plan with forests, farms and the sea. This vision answers four questions: what we learn from the world's science cities, how an AI innovation ecosystem is built and measured, what urban form AI culture deserves, and which AI scenarios we deploy first.</p>
+  <div class="pills"><a href="#atlas"><b>1</b>Redrawn science-city atlas</a><a href="#ecosystem"><b>2</b>Indicators · industries · networks · space</a><a href="#forms"><b>3</b>Space-Age × Rail urban form</a><a href="#scenarios"><b>4</b>Nine AI scenarios</a></div>
+  <svg class="scene" viewBox="0 0 1200 380" id="heroScene"></svg>
+</div></header>
+
+<!-- 1 ATLAS -->
+<section id="atlas"><div class="wrap">
+  <div class="eyebrow">01 · Case references → vision</div>
+  <h2>The science-city atlas, redrawn</h2>
+  <p class="lead">Fourteen domestic and international science cities, tech parks and innovation districts, each redrawn as a schematic plan showing its spatial pattern, plus the one idea we take from it. The plans are diagrams, not surveys.</p>
+  <div class="tabs" id="atlasTabs"><button class="on" data-f="all">All 14</button><button data-f="dom">Domestic (China)</button><button data-f="intl">International</button></div>
+  <div class="grid g3" id="atlasGrid"></div>
+  <div class="synth">
+    <div class="card"><div class="eyebrow">Synthesis</div><h3 style="font-size:30px;line-height:1.1">Our model: the "Ring &amp; Rail" city</h3>
+      <p style="margin-top:10px;color:var(--ink2)">We take the research density of Zhongguancun and Kendall Square, the planned digital twin of Xiong'an, the green spine of one-north, the forest setting of Sophia Antipolis, the street hierarchy of Woven City, the passive climate design of Masdar, and the railway-station regeneration of King's Cross, then arrange them on a radial plan. A civic core sits at the centre. Research and living rings surround it. An ecosystem belt holds eight sectors, a heritage rail ring connects them, and nature wraps around the edge.</p>
+      <div class="dna" style="margin-top:14px"><div><b>Density at the core</b>Labs, civic and talent within a 10-minute walk</div><div><b>Twin first</b>Every street simulated before it is built</div><div><b>Green spine</b>Boulevards double as ecological corridors</div><div><b>Rail as identity</b>Heritage rail ring and Skyport station</div><div><b>Street hierarchy</b>Separate ways for people, AVs and logistics</div><div><b>Passive first</b>Shade, wind and water before machines</div></div></div>
+    <svg viewBox="0 0 400 400" id="synthPlan" style="width:100%;height:auto"></svg>
+  </div>
+</div></section>
+
+<!-- 2 ECOSYSTEM -->
+<section id="ecosystem" style="background:var(--paper)"><div class="wrap">
+  <div class="eyebrow">02 · AI innovation ecosystem</div>
+  <h2>An ecosystem built and steered by indicators</h2>
+  <p class="lead">Four layers: an <b>indicator system</b> that measures the ecosystem, a <b>priority industry system</b> that sets what to grow, an <b>innovation network</b> that connects who grows it, and a <b>spatial organization</b> that decides where it grows. AI agents monitor the indicators continuously and propose corrections, and people approve them.</p>
+
+  <h3 style="font-size:30px;margin-top:40px">A · AI Ecosystem Index (indicator system)</h3>
+  <div class="ind">
+    <div class="card">
+      <div class="presets" id="presets"><button data-p="maat">Ma'at balanced</button><button data-p="ind">Industry first</button><button data-p="live">Livability first</button></div>
+      <div id="weights"></div>
+      <div class="score" id="scores"></div>
+      <p style="font-size:12px;color:var(--mute)">The weights set what the city values. Scores are normalized 0–100 against global benchmark districts. Baseline and targets are proposed planning values, not measurements.</p>
+    </div>
+    <div class="card"><svg viewBox="0 0 520 420" id="radar" style="width:100%;height:auto"></svg></div>
+  </div>
+  <div class="card" style="margin-top:18px"><div class="tabs" id="dimTabs" style="margin-top:0"></div><table><thead><tr><th>Indicator</th><th>Baseline</th><th>2030</th><th>2035</th><th>AI agent watching it</th></tr></thead><tbody id="indBody"></tbody></table></div>
+
+  <h3 style="font-size:30px;margin-top:48px">B · Priority industry system</h3>
+  <div class="pyr" style="margin-top:16px"><svg viewBox="0 0 520 430" id="pyramid" style="width:100%;height:auto"></svg><div class="card" id="tierInfo"></div></div>
+
+  <h3 style="font-size:30px;margin-top:48px">C · Innovation network</h3>
+  <p style="color:var(--ink2);max-width:760px">Universities, labs, start-ups, platform firms, capital, government, test sites and residents form a living network. Drag any node, and hover over it to see its links.</p>
+  <svg viewBox="0 0 1000 460" id="net" style="margin-top:14px"></svg>
+
+  <h3 style="font-size:30px;margin-top:48px">D · Spatial organization</h3>
+  <div class="sp" style="margin-top:16px"><svg viewBox="0 0 520 520" id="spatial" style="width:100%;height:auto"></svg><div><div class="leg" id="spLeg"></div><div class="card" id="spInfo" style="margin-top:12px"></div></div></div>
+</div></section>
+
+<!-- 3 FORMS -->
+<section id="forms"><div class="wrap">
+  <div class="eyebrow">03 · New urban forms adapted to AI</div>
+  <h2>Space Age meets Rail Age</h2>
+  <p class="lead">The city's identity combines three cultures: the <b>railway heritage</b> of stations, ironwork and clock towers; the <b>innovation culture</b> of a science district; and the emerging <b>AI culture</b>. They come together in a Space-Age design language of saucer towers, boomerang roofs, starbursts and streamlined trains. It is the retro-future people imagined in the 1960s, built for real with AI.</p>
+  <div class="grid g4" style="margin-top:30px" id="motifs"></div>
+  <div class="grid g3" style="margin-top:30px" id="scenes"></div>
+  <div class="pill3">
+    <div class="card"><div class="eyebrow">AI culture</div><h3>A city that makes art with its machines</h3><ul><li>Annual Ma'at Festival of human–AI art on the rail ring</li><li>Hall of Algorithms in the old station, explaining how city AI works</li><li>Human–AI orchestra at the Festival Commons amphitheatre</li><li>Generative light shows projected on the Skyport arch</li></ul></div>
+    <div class="card"><div class="eyebrow">AI society</div><h3>Residents co-govern the machines</h3><ul><li>Resident AI councils review every public algorithm</li><li>A right to know about and opt out of any city AI system</li><li>A civic dividend from city data and AI revenue</li><li>Free lifelong re-skilling for AI-era work</li></ul></div>
+    <div class="card"><div class="eyebrow">AI city</div><h3>A digital twin runs the physical city</h3><ul><li>A live twin of every street, pipe, tower and train</li><li>AI stewards for water, food, energy, soil, healing, habitat and people</li><li>A Tesla-style wireless grid that is free to residents</li><li>Kinetic streets that harvest energy from footsteps and traffic</li></ul></div>
+  </div>
+  <div class="card" style="margin-top:22px"><div class="eyebrow">Deployable real-world scenarios</div><table><thead><tr><th>Scenario</th><th>Where</th><th>Readiness</th><th>What's needed</th><th>Pilot</th></tr></thead><tbody id="deployBody"></tbody></table><p style="font-size:12px;color:var(--mute);margin-top:8px">TRL is technology readiness level (1 = idea, 9 = proven in operation). These are our planning estimates.</p></div>
+</div></section>
+
+<!-- 4 SCENARIOS -->
+<section id="scenarios" style="background:var(--paper)"><div class="wrap">
+  <div class="eyebrow">04 · AI application scenarios</div>
+  <h2>Nine scenarios, ready to pilot</h2>
+  <p class="lead">Each scenario has a live mini-scene, a user journey, a technology stack, success measures and a pilot site in the radial city.</p>
+  <div class="tabs" id="scnTabs"></div>
+  <div class="card scn" id="scnBody"></div>
+</div></section>
+
+<!-- ROADMAP -->
+<section id="roadmap"><div class="wrap">
+  <div class="eyebrow">Implementation</div>
+  <h2>From blueprint to living city</h2>
+  <div class="grid g3" style="margin-top:24px">
+    <div class="card"><div class="mono" style="color:var(--teal)">PHASE I · YEARS 1–3</div><h3 style="font-size:28px">Seed</h3><ul style="padding-left:18px;color:var(--ink2);font-size:14.5px"><li>Digital twin and Ma'at AI Charter</li><li>Heritage rail ring and Skyport station, phase 1</li><li>AV shuttles, drone delivery and AI clinic pilots</li><li>Indicator dashboard goes live, with AI agents watching every KPI</li></ul></div>
+    <div class="card"><div class="mono" style="color:var(--teal)">PHASE II · YEARS 4–7</div><h3 style="font-size:28px">Grow</h3><ul style="padding-left:18px;color:var(--ink2);font-size:14.5px"><li>Saucer sky-home districts and living crescents</li><li>Air-taxi sky lanes and the vertiport network</li><li>Embodied-AI proving grounds and robotics clusters</li><li>Tesla wireless grid across all eight sectors</li></ul></div>
+    <div class="card"><div class="mono" style="color:var(--teal)">PHASE III · YEARS 8–12</div><h3 style="font-size:28px">Flourish</h3><ul style="padding-left:18px;color:var(--ink2);font-size:14.5px"><li>Net-zero operations; 30% of food grown in the city</li><li>Every scenario at city scale</li><li>The blueprint exported to partner cities at home and abroad</li><li>A 150-year Seventh-Generation stewardship plan</li></ul></div>
+  </div>
+  <a class="cta" href="../explorer-v2/index.html">Walk the radial city in 3D ↗</a>
+</div></section>
+
+<footer><div class="wrap">Civitas Sapientia · Development Vision 2.0 · Nova Digitus Designs LLC · Prepared in response to the Haidian AI Innovation Belt brief. Plans, scores and targets are illustrative planning proposals. Space-Age design references the 1950s–60s Googie architectural movement; all drawings are original. · <a href="../vision-1/index.html">Vision 1.0</a></div></footer>
+
+<script>
+const $ = s => document.querySelector(s), C = { ink: '#13213c', teal: '#16a39a', aqua: '#5fd6cf', coral: '#ff6b4a', mustard: '#f4b13e', rose: '#e85a8a', paper: '#fbf0dc', cream: '#fff6e6', green: '#7cbf5a', dgreen: '#3f8a4a', water: '#6ec6e6', iron: '#2a2a2e', brass: '#b8893a' };
+const rng = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
+function tabify(sel, fn) { document.querySelectorAll(sel + ' button').forEach(b => b.addEventListener('click', () => { document.querySelectorAll(sel + ' button').forEach(x => x.classList.remove('on')); b.classList.add('on'); fn(b); })); }
+
+/* ================= HERO SCENE (original Space-Age × Rail skyline) ================= */
+(function () {
+  const r = rng(11); let s = '';
+  s += `<defs><linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c3c6c" stop-opacity="0"/><stop offset="1" stop-color="#ffd59a" stop-opacity=".2"/></linearGradient></defs>`;
+  // starbursts
+  for (let i = 0; i < 14; i++) { const x = r() * 1200, y = r() * 150, k = 4 + r() * 7; s += `<g class="a-blink" style="animation-delay:${r() * 2}s" transform="translate(${x} ${y})" fill="#fff6e6">${[0, 45, 90, 135].map(a => `<rect x="${-k}" y="-.8" width="${k * 2}" height="1.6" transform="rotate(${a})"/>`).join('')}</g>`; }
+  // far skyline
+  for (let i = 0; i < 30; i++) { const x = i * 42 + r() * 20, h = 60 + r() * 90; s += `<rect x="${x}" y="${330 - h}" width="${26 + r() * 14}" height="${h}" fill="#3a4a7c" opacity=".55"/>`; }
+  // saucer towers
+  const saucer = (x, h, c, w = 70) => `<g><rect x="${x - 5}" y="${330 - h}" width="10" height="${h}" fill="${C.cream}"/><path d="M${x - 14} 330 L${x - 4} ${330 - h * .5} L${x + 4} ${330 - h * .5} L${x + 14} 330Z" fill="${C.cream}" opacity=".9"/>
+    <ellipse cx="${x}" cy="${330 - h}" rx="${w / 2}" ry="${w * .14}" fill="${c}" stroke="${C.ink}" stroke-width="2"/><path d="M${x - w * .32} ${330 - h - 2} Q${x} ${330 - h - w * .4} ${x + w * .32} ${330 - h - 2}Z" fill="${C.aqua}" stroke="${C.ink}" stroke-width="2"/>
+    ${Array.from({ length: 6 }, (_, k) => `<circle cx="${x - w * .36 + k * w * .144}" cy="${330 - h + 1}" r="2.3" fill="${C.mustard}" class="a-blink" style="animation-delay:${k * .2}s"/>`).join('')}<rect x="${x - 1}" y="${330 - h - w * .42 - 22}" width="2" height="24" fill="${C.cream}"/><circle cx="${x}" cy="${330 - h - w * .42 - 24}" r="4" fill="${C.coral}" class="a-blink"/></g>`;
+  s += saucer(170, 190, C.coral, 92) + saucer(330, 140, C.mustard) + saucer(880, 210, C.teal, 100) + saucer(1050, 150, C.rose, 76);
+  // Skyport parabolic arch + clock tower
+  s += `<path d="M470 330 Q600 70 730 330" fill="none" stroke="${C.cream}" stroke-width="14"/><path d="M500 330 Q600 120 700 330" fill="none" stroke="${C.mustard}" stroke-width="5"/>
+    <path d="M440 330 L760 330 L740 300 L460 300Z" fill="${C.ink}" opacity=".85"/><rect x="590" y="160" width="20" height="140" fill="${C.iron}"/><circle cx="600" cy="170" r="20" fill="${C.cream}" stroke="${C.brass}" stroke-width="5"/>
+    <line x1="600" y1="170" x2="600" y2="157" stroke="${C.ink}" stroke-width="3"/><line x1="600" y1="170" x2="610" y2="174" stroke="${C.ink}" stroke-width="3"/>`;
+  // flying cars
+  [[0, 120, C.coral], [2.5, 90, C.teal], [5, 150, C.mustard]].forEach(([d, y, c]) => s += `<g class="a-fly" style="animation-delay:-${d}s"><g transform="translate(0 ${y})"><ellipse cx="0" cy="0" rx="26" ry="8" fill="${c}" stroke="${C.ink}" stroke-width="2"/><path d="M-12 -4 Q0 -18 12 -4Z" fill="${C.aqua}" stroke="${C.ink}" stroke-width="2"/><rect x="18" y="-1" width="10" height="2" fill="#fff" opacity=".8"/></g></g>`);
+  // ground + elevated rail viaduct with truss + streamliner
+  s += `<rect x="0" y="330" width="1200" height="50" fill="#2c3c5c"/><rect x="0" y="300" width="1200" height="8" fill="${C.iron}"/>`;
+  for (let x = 0; x < 1200; x += 40) s += `<path d="M${x} 308 L${x + 20} 330 L${x + 40} 308" fill="none" stroke="${C.iron}" stroke-width="3"/>`;
+  s += `<g class="a-train"><g transform="translate(0 270)"><path d="M0 30 L0 8 Q0 0 10 0 L330 0 Q380 0 410 30Z" fill="${C.cream}" stroke="${C.ink}" stroke-width="2.5"/><rect x="0" y="16" width="400" height="5" fill="${C.coral}"/><rect x="0" y="22" width="404" height="3" fill="${C.mustard}"/>
+    ${Array.from({ length: 12 }, (_, k) => `<rect x="${18 + k * 26}" y="5" width="18" height="8" rx="3" fill="${C.aqua}" stroke="${C.ink}" stroke-width="1.2"/>`).join('')}<circle cx="388" cy="22" r="3.5" fill="#fffbe0"/></g></g>`;
+  $('#heroScene').innerHTML = s;
+})();
+
+/* ================= 1 · ATLAS ================= */
+const CASES = [
+  ['Zhongguancun Science City', 'Beijing, China', 'dom', 'grid', 'University-dense grid; spin-offs from campuses next door', 'Put research campuses on the city\'s main streets, not behind fences.'],
+  ['Shenzhen Nanshan', 'Shenzhen, China', 'dom', 'dense', 'Hardware supply chain plus software talent in one district', 'A maker belt within one stop of every lab, so prototypes take 48 hours.'],
+  ['Xiong\'an New Area', 'Hebei, China', 'dom', 'newcity', 'Lake-centred new city planned with its digital twin from day one', 'Build the twin first, and simulate every street before pouring concrete.'],
+  ['Suzhou Industrial Park', 'Jiangsu, China', 'dom', 'lake', 'International co-development around Jinji Lake', 'A one-window service and stable rules to attract global firms.'],
+  ['Shanghai Zhangjiang', 'Shanghai, China', 'dom', 'corridor', 'Science city with research facilities along a central axis', 'Shared large science facilities as anchors for a whole district.'],
+  ['Hangzhou Future Sci-Tech City', 'Zhejiang, China', 'dom', 'linear', 'Linear corridor of platforms, talent and venture capital', 'A corridor where platform firms seed start-up chains.'],
+  ['Tsukuba Science City', 'Ibaraki, Japan', 'intl', 'cluster', 'Planned national research town with a pedestrian spine', 'Mixed use, so a science town never goes quiet at night.'],
+  ['Daedeok Innopolis', 'Daejeon, Korea', 'intl', 'cluster2', 'Government labs clustered in a green valley', 'Tech transfer and venture capital inside the labs, not after them.'],
+  ['one-north', 'Singapore', 'intl', 'hubs', 'Themed hubs linked by a park connector', 'Themed districts strung along one green spine.'],
+  ['Kendall Square', 'Cambridge, USA', 'intl', 'kendall', 'Dense blocks between a university and the river', 'Collision spaces: shared ground floors, cafés and labs.'],
+  ['Sophia Antipolis', 'Côte d\'Azur, France', 'intl', 'park', 'Science park set within a protected pine forest', 'Grow inside ecological limits and treat forest as infrastructure.'],
+  ['Masdar City', 'Abu Dhabi, UAE', 'intl', 'oasis', 'Compact shaded streets, wind towers and solar fields', 'Passive design first and active technology second.'],
+  ['Toyota Woven City', 'Susono, Japan', 'intl', 'woven', 'Test town weaving three street types together', 'Separate ways for people, autonomous vehicles and logistics.'],
+  ['King\'s Cross Knowledge Quarter', 'London, UK', 'intl', 'station', 'Railway lands regenerated into a knowledge district', 'Turn rail heritage into the heart of an innovation district.'],
+];
+function plan(type, seed) {
+  const r = rng(seed * 97 + 13), W = 300, H = 190; let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="${C.paper}"/>`;
+  const blk = (x, y, w, h, f) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${f}" stroke="${C.ink}" stroke-width="1"/>`;
+  const tree = (x, y, rr = 4) => `<circle cx="${x}" cy="${y}" r="${rr}" fill="${C.green}" opacity=".85"/>`;
+  const water = (d) => `<path d="${d}" fill="${C.water}" stroke="${C.ink}" stroke-width="1"/>`;
+  if (type === 'grid' || type === 'dense') { const g = type === 'dense' ? 14 : 22; for (let x = 10; x < W - 10; x += g) for (let y = 10; y < H - 10; y += g) { const u = r(); s += blk(x, y, g - 5, g - 5, u < .18 ? C.mustard : u < .3 ? C.teal : u < .38 && type === 'dense' ? C.coral : '#fff'); }
+    s += `<line x1="0" y1="${H / 2}" x2="${W}" y2="${H / 2}" stroke="${C.coral}" stroke-width="4"/>`; }
+  else if (type === 'newcity' || type === 'lake') { s += water(type === 'lake' ? `M120 60 Q190 30 230 80 Q250 140 170 150 Q100 150 110 100Z` : `M130 80 Q160 55 190 80 Q205 110 165 122 Q125 120 130 80Z`);
+    for (let x = 10; x < W - 10; x += 18) for (let y = 10; y < H - 10; y += 18) { const inL = Math.hypot(x - 168, y - 98) < (type === 'lake' ? 62 : 40); if (!inL && r() < .7) s += blk(x, y, 13, 13, r() < .15 ? C.mustard : '#fff'); }
+    if (type === 'newcity') { s += `<circle cx="150" cy="95" r="88" fill="none" stroke="${C.dgreen}" stroke-width="10" opacity=".5"/><text x="10" y="182" font-family="IBM Plex Mono" font-size="9" fill="${C.teal}">◈ digital twin</text>`; } }
+  else if (type === 'corridor' || type === 'linear') { s += `<rect x="0" y="${H / 2 - 7}" width="${W}" height="14" fill="${C.dgreen}" opacity=".5"/><line x1="0" y1="${H / 2}" x2="${W}" y2="${H / 2}" stroke="${C.coral}" stroke-width="3" stroke-dasharray="${type === 'linear' ? '0' : '8 5'}"/>`;
+    for (let x = 18; x < W - 10; x += 34) { [-1, 1].forEach(sd => { s += blk(x, H / 2 + sd * 16 + (sd < 0 ? -28 : 0), 26, 28, r() < .3 ? C.teal : '#fff'); }); if (type === 'corridor' && r() < .4) s += `<circle cx="${x + 13}" cy="${H / 2}" r="8" fill="${C.mustard}" stroke="${C.ink}"/>`; } }
+  else if (type === 'cluster' || type === 'cluster2') { s += `<line x1="${W / 2}" y1="0" x2="${W / 2}" y2="${H}" stroke="${C.coral}" stroke-width="4"/>`; for (let i = 0; i < 40; i++) s += tree(r() * W, r() * H, 5);
+    for (let i = 0; i < 9; i++) { const x = 30 + r() * 240, y = 20 + r() * 150; s += `<ellipse cx="${x}" cy="${y}" rx="${18 + r() * 14}" ry="${12 + r() * 8}" fill="${i % 3 ? '#fff' : C.teal}" stroke="${C.ink}"/>`; } if (type === 'cluster2') s += water(`M0 160 Q150 130 300 170 L300 190 L0 190Z`); }
+  else if (type === 'hubs') { const hubs = [[50, 60], [130, 120], [210, 70], [260, 140]]; s += `<path d="M${hubs.map(h => h.join(' ')).join(' L')}" fill="none" stroke="${C.dgreen}" stroke-width="12" stroke-linecap="round" opacity=".6"/>`;
+    hubs.forEach(([x, y], i) => { for (let k = 0; k < 6; k++) s += blk(x - 24 + (k % 3) * 17, y - 18 + Math.floor(k / 3) * 20, 13, 15, [C.teal, C.mustard, C.coral, C.rose][i]); }); for (let i = 0; i < 26; i++) s += tree(r() * W, r() * H, 3.5); }
+  else if (type === 'kendall') { s += water(`M0 150 Q150 135 300 160 L300 190 L0 190Z`); for (let x = 12; x < W - 10; x += 16) for (let y = 12; y < 130; y += 16) s += blk(x, y, 12, 12, x < 110 ? (r() < .5 ? C.mustard : '#fff') : r() < .25 ? C.teal : '#fff');
+    s += `<rect x="8" y="8" width="104" height="122" fill="none" stroke="${C.coral}" stroke-width="2.5" stroke-dasharray="5 4"/>`; }
+  else if (type === 'park') { for (let i = 0; i < 140; i++) s += tree(r() * W, r() * H, 4 + r() * 3); for (let i = 0; i < 7; i++) { const x = 30 + r() * 240, y = 20 + r() * 150; s += `<circle cx="${x}" cy="${y}" r="16" fill="${C.paper}"/>` + blk(x - 9, y - 7, 18, 14, i % 2 ? C.teal : '#fff'); } s += `<path d="M0 100 Q100 60 160 110 T300 80" fill="none" stroke="${C.coral}" stroke-width="3"/>`; }
+  else if (type === 'oasis') { s += `<rect x="190" y="0" width="110" height="${H}" fill="#2a4a7a" opacity=".85"/>`; for (let x = 196; x < 296; x += 9) for (let y = 6; y < H; y += 9) s += `<rect x="${x}" y="${y}" width="7" height="7" fill="#3a6ab0"/>`;
+    for (let x = 14; x < 180; x += 11) for (let y = 14; y < H - 10; y += 11) if (r() < .85) s += blk(x, y, 9, 9, r() < .12 ? C.mustard : '#f2e2c2'); for (let i = 0; i < 6; i++) s += `<rect x="${20 + r() * 150}" y="${20 + r() * 140}" width="5" height="12" fill="${C.coral}" stroke="${C.ink}"/>`; }
+  else if (type === 'woven') { for (let x = 10; x < W - 10; x += 26) for (let y = 10; y < H - 10; y += 26) s += blk(x + 4, y + 4, 18, 18, '#fff');
+    for (let x = 10; x < W; x += 26) s += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${[C.coral, C.teal, C.mustard][Math.round(x / 26) % 3]}" stroke-width="3"/>`; for (let y = 10; y < H; y += 26) s += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${[C.teal, C.mustard, C.coral][Math.round(y / 26) % 3]}" stroke-width="3"/>`; }
+  else if (type === 'station') { for (let i = 0; i < 6; i++) s += `<line x1="0" y1="${20 + i * 6}" x2="${W}" y2="${50 + i * 6}" stroke="${C.iron}" stroke-width="2"/>`;
+    s += `<rect x="110" y="40" width="90" height="34" rx="16" fill="${C.mustard}" stroke="${C.ink}" stroke-width="2"/>` + water(`M0 120 Q150 100 300 130 L300 138 Q150 108 0 128Z`);
+    for (let x = 20; x < W - 10; x += 22) for (let y = 140; y < H - 6; y += 18) s += blk(x, y, 16, 13, r() < .25 ? C.teal : '#fff'); for (let i = 0; i < 18; i++) s += tree(r() * W, 84 + r() * 30, 3.5); }
+  s += `<g transform="translate(${W - 26} 22)"><circle r="11" fill="#fff" stroke="${C.ink}"/><path d="M0 -8 L3 0 L-3 0Z" fill="${C.coral}"/><text y="6" text-anchor="middle" font-size="7" font-family="IBM Plex Mono">N</text></g></svg>`;
+  return s;
+}
+function drawAtlas(f) { $('#atlasGrid').innerHTML = CASES.map((c, i) => [c, i]).filter(([c]) => f === 'all' || c[2] === f).map(([c, i]) => `<div class="card case">${plan(c[3], i + 1)}<div class="cb"><div class="pl">${c[1]}</div><h3>${c[0]}</h3><p>${c[4]}.</p><p><b>We borrow:</b> ${c[5]}</p></div></div>`).join(''); }
+drawAtlas('all'); tabify('#atlasTabs', b => drawAtlas(b.dataset.f));
+function radialPlan(size, opts = {}) { const c = size / 2, k = size / 520; let s = '';
+  const ring = (r, w, col, op = 1, dash = '') => `<circle cx="${c}" cy="${c}" r="${r * k}" fill="none" stroke="${col}" stroke-width="${w * k}" opacity="${op}" ${dash ? `stroke-dasharray="${dash}"` : ''}/>`;
+  s += `<rect width="${size}" height="${size}" fill="${C.paper}"/><circle cx="${c}" cy="${c}" r="${250 * k}" fill="${C.green}" opacity=".35"/>`;
+  s += ring(242, 20, C.water) + ring(129, 12, C.water) + ring(171, 62, C.green, .7) + ring(98, 40, '#f2dcc0') + ring(55, 26, '#e7d0f0') + ring(210, 4, C.coral, 1, `${8 * k} ${5 * k}`);
+  for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + Math.PI / 8; s += `<line x1="${c + Math.cos(a) * 36 * k}" y1="${c + Math.sin(a) * 36 * k}" x2="${c + Math.cos(a) * 252 * k}" y2="${c + Math.sin(a) * 252 * k}" stroke="${C.ink}" stroke-width="${3 * k}" opacity=".6"/>`; }
+  s += `<circle cx="${c}" cy="${c}" r="${32 * k}" fill="${C.aqua}" stroke="${C.ink}" stroke-width="${2 * k}"/><circle cx="${c}" cy="${c}" r="${8 * k}" fill="${C.mustard}" stroke="${C.ink}"/>`;
+  return s; }
+$('#synthPlan').innerHTML = radialPlan(400) + `<text x="200" y="392" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="${C.ink}">Ring &amp; Rail: core · research · living · canal · belt · rail · waterway</text>`;
+
+/* ================= 2A · INDICATORS ================= */
+const DIMS = [
+  { k: 'innov', n: 'Innovation capacity', c: C.coral, base: 58, y30: 78, y35: 90, ind: [['AI R&D intensity (% of district GDP)', '5.5%', '≥ 8%', '≥ 10%', 'LOGOS'], ['AI invention patents / year', '2,600', '5,000', '9,000', 'LOGOS'], ['National & international AI labs', '9', '20', '35', 'LOGOS'], ['Open-source models released / year', '18', '50', '120', 'LOGOS']] },
+  { k: 'ind', n: 'Industry strength', c: C.mustard, base: 62, y30: 80, y35: 92, ind: [['AI core industry output', '¥140B', '¥300B', '¥600B', 'SOLIS'], ['AI enterprises', '1,100', '2,000', '4,000', 'AGORA'], ['Unicorns / listed AI firms', '6', '15', '30', 'AGORA'], ['Firms using AI in operations', '45%', '70%', '95%', 'LOGOS']] },
+  { k: 'talent', n: 'Talent & openness', c: C.teal, base: 55, y30: 76, y35: 88, ind: [['AI researchers & engineers', '38k', '70k', '120k', 'AGORA'], ['International talent share', '6%', '12%', '18%', 'AGORA'], ['Talent housing within 15 min of labs', '40%', '75%', '95%', 'AQUA'], ['Residents re-skilled for AI work / year', '8k', '25k', '50k', 'SALUS']] },
+  { k: 'live', n: 'Livability & ecology', c: C.dgreen, base: 60, y30: 82, y35: 93, ind: [['Residents within 15 min of school, care & park', '62%', '85%', '100%', 'SYLVA'], ['Green & blue cover', '28%', '38%', '45%', 'SYLVA'], ['Renewable energy share', '35%', '70%', '100%', 'SOLIS'], ['Food grown in-city', '2%', '15%', '30%', 'VERDA']] },
+  { k: 'trust', n: 'Trust & governance', c: C.rose, base: 48, y30: 80, y35: 92, ind: [["Public algorithms with a Ma'at audit", '20%', '100%', '100%', "MA'AT"], ['Algorithms with human override', '60%', '100%', '100%', "MA'AT"], ['Residents on AI civic councils', '600', '5,000', '15,000', 'AGORA'], ['Resident trust in city AI', '52%', '70%', '80%', 'AGORA']] },
+];
+const W8 = { innov: 25, ind: 20, talent: 20, live: 20, trust: 15 };
+const PRE = { maat: { innov: 20, ind: 20, talent: 20, live: 20, trust: 20 }, ind: { innov: 30, ind: 35, talent: 20, live: 10, trust: 5 }, live: { innov: 15, ind: 10, talent: 20, live: 35, trust: 20 } };
+$('#weights').innerHTML = DIMS.map(d => `<div class="sl"><label><span style="color:${d.c};font-family:Space Grotesk">● ${d.n}</span><span id="wv-${d.k}">${W8[d.k]}</span></label><input type="range" min="0" max="50" value="${W8[d.k]}" data-k="${d.k}"></div>`).join('');
+document.querySelectorAll('#weights input').forEach(i => i.addEventListener('input', () => { W8[i.dataset.k] = +i.value; $('#wv-' + i.dataset.k).textContent = i.value; calc(); }));
+document.querySelectorAll('#presets button').forEach(b => b.onclick = () => { Object.assign(W8, PRE[b.dataset.p]); document.querySelectorAll('#weights input').forEach(i => { i.value = W8[i.dataset.k]; $('#wv-' + i.dataset.k).textContent = i.value; }); calc(); });
+function calc() { const tw = Object.values(W8).reduce((a, b) => a + b, 0) || 1, idx = key => DIMS.reduce((s, d) => s + d[key] * W8[d.k], 0) / tw;
+  $('#scores').innerHTML = [['Baseline', 'base', C.mute], ['2030', 'y30', C.teal], ['2035', 'y35', C.coral]].map(([n, k, c]) => `<div><b style="color:${c}">${idx(k).toFixed(0)}</b><span>${n} index</span></div>`).join(''); drawRadar(); }
+function drawRadar() { const cx = 260, cy = 215, R = 160, n = DIMS.length, pt = (i, v) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + Math.cos(a) * R * v / 100, cy + Math.sin(a) * R * v / 100]; };
+  let s = ''; [25, 50, 75, 100].forEach(v => s += `<polygon points="${DIMS.map((_, i) => pt(i, v).join(',')).join(' ')}" fill="none" stroke="${C.line || '#e7d7bb'}" stroke-width="1.5"/>`);
+  DIMS.forEach((d, i) => { const [x, y] = pt(i, 100), [lx, ly] = pt(i, 122); s += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e7d7bb"/><text x="${lx}" y="${ly}" text-anchor="middle" font-family="Space Grotesk" font-weight="600" font-size="13" fill="${d.c}">${d.n}</text><text x="${lx}" y="${ly + 15}" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#6b7487">weight ${W8[d.k]}</text>`; });
+  [['base', '#9aa3b5', .15], ['y30', C.teal, .18], ['y35', C.coral, .2]].forEach(([k, c, o]) => s += `<polygon points="${DIMS.map((d, i) => pt(i, d[k]).join(',')).join(' ')}" fill="${c}" fill-opacity="${o}" stroke="${c}" stroke-width="2.5"/>`);
+  s += `<g font-family="IBM Plex Mono" font-size="11"><rect x="16" y="392" width="12" height="4" fill="#9aa3b5"/><text x="32" y="397">baseline</text><rect x="110" y="392" width="12" height="4" fill="${C.teal}"/><text x="126" y="397">2030 target</text><rect x="226" y="392" width="12" height="4" fill="${C.coral}"/><text x="242" y="397">2035 target</text></g>`;
+  $('#radar').innerHTML = s; }
+$('#dimTabs').innerHTML = DIMS.map((d, i) => `<button class="${i ? '' : 'on'}" data-k="${d.k}">${d.n}</button>`).join('');
+const drawInd = k => { const d = DIMS.find(x => x.k === k); $('#indBody').innerHTML = d.ind.map(r => `<tr><td>${r[0]}</td><td class="t" style="color:#6b7487">${r[1]}</td><td class="t">${r[2]}</td><td class="t" style="color:${C.coral}">${r[3]}</td><td><span class="tag">${r[4]}</span></td></tr>`).join(''); };
+drawInd('innov'); tabify('#dimTabs', b => drawInd(b.dataset.k)); calc();
+
+/* ================= 2B · PYRAMID ================= */
+const TIERS = [
+  { n: 'Frontier', c: C.rose, w: .34, items: ['Quantum-AI computing', 'Brain-computer interfaces', 'AI for space & satellites', 'Synthetic biology + AI'], d: 'Bets on the next wave: small budgets, long horizons, shared lab facilities and international partnerships.', site: 'Research arcs (inner ring)' },
+  { n: 'Application', c: C.mustard, w: .58, items: ['AI + transport', 'AI + healthcare', 'AI + education', 'AI + energy', 'AI + agriculture', 'AI + culture & media', 'AI + finance', 'AI + civic services'], d: 'Where AI meets daily life and revenue. Every application has a live pilot site in one of the eight ecosystem sectors.', site: 'Ecosystem belt sectors' },
+  { n: 'Core', c: C.teal, w: .8, items: ['Foundation & multimodal models', 'Embodied AI & robotics', 'Autonomous driving stacks', 'AI safety, audit & alignment'], d: 'The intelligence layer. Labs share floors with industry, and an AI safety institute sits beside the civic core.', site: 'Research arcs + Proving Grounds' },
+  { n: 'Foundation', c: C.ink, w: 1, items: ['Green compute & AI chips', 'Data trust & privacy tech', '6G, edge & sensing networks', 'Wireless (Tesla) energy grid'], d: 'Shared infrastructure that every firm can rent, so start-ups don\'t build data centres.', site: 'Compute Forest + city-wide' },
+];
+(function () { let s = ''; const cx = 260, top = 20, h = 95;
+  TIERS.forEach((t, i) => { const y = top + i * (h + 6), w0 = (i === 0 ? .12 : TIERS[i - 1].w) * 480, w1 = t.w * 480;
+    s += `<g class="tier" data-i="${i}"><path d="M${cx - w0 / 2} ${y} L${cx + w0 / 2} ${y} L${cx + w1 / 2} ${y + h} L${cx - w1 / 2} ${y + h}Z" fill="${t.c}" stroke="${C.ink}" stroke-width="2.5"/><text x="${cx}" y="${y + h / 2 + 2}" text-anchor="middle" font-family="Righteous" font-size="${i ? 26 : 20}" fill="#fff">${t.n}</text><text x="${cx}" y="${y + h / 2 + 22}" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#fff" opacity=".85">${t.items.length} priority industries</text></g>`; });
+  $('#pyramid').innerHTML = s; document.querySelectorAll('.tier').forEach(g => g.addEventListener('click', () => showTier(+g.dataset.i))); showTier(2); })();
+function showTier(i) { const t = TIERS[i]; $('#tierInfo').innerHTML = `<div class="eyebrow" style="color:${t.c}">Priority tier</div><h3>${t.n}</h3><p style="color:var(--ink2);margin:8px 0">${t.d}</p><div>${t.items.map(x => `<span class="tag">${x}</span>`).join('')}</div><p style="margin-top:12px;font-size:13px"><b>Where it lives:</b> ${t.site}</p><p style="font-size:12px;color:var(--mute);margin-top:8px">Click any tier of the pyramid.</p>`; }
+
+/* ================= 2C · NETWORK (draggable force graph) ================= */
+(function () { const NODES = [['Tsinghua-style university', 'uni'], ['Polytechnic institute', 'uni'], ['National AI lab', 'lab'], ['AI safety institute', 'lab'], ['Robotics lab', 'lab'], ['Model start-up', 'st'], ['Robotics start-up', 'st'], ['Health-AI start-up', 'st'], ['Platform firm', 'firm'], ['Chip maker', 'firm'], ['Auto/AV maker', 'firm'], ['Venture capital', 'cap'], ['City guidance fund', 'cap'], ['City government', 'gov'], ["Ma'at AI council", 'gov'], ['Test streets & clinics', 'test'], ['Residents', 'res'], ['Global partner cities', 'intl']];
+  const COL = { uni: C.teal, lab: C.coral, st: C.mustard, firm: C.ink, cap: C.rose, gov: '#7a5ae0', test: C.dgreen, res: C.aqua, intl: C.brass };
+  const E = [[0, 2], [0, 5], [1, 4], [1, 6], [2, 5], [2, 3], [3, 14], [4, 6], [5, 8], [6, 10], [7, 15], [8, 9], [8, 11], [9, 2], [10, 15], [11, 5], [11, 6], [11, 7], [12, 7], [12, 6], [13, 12], [13, 15], [14, 16], [15, 16], [16, 7], [17, 0], [17, 8], [3, 15], [0, 7], [13, 14]];
+  const W = 1000, H = 460, P = NODES.map((_, i) => ({ x: W / 2 + Math.cos(i) * 200, y: H / 2 + Math.sin(i * 1.3) * 140, vx: 0, vy: 0 })); let drag = null, hover = -1;
+  const svg = $('#net');
+  function step() { for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) { const dx = P[j].x - P[i].x, dy = P[j].y - P[i].y, d2 = dx * dx + dy * dy + .01, f = 5200 / d2, d = Math.sqrt(d2); P[i].vx -= f * dx / d; P[i].vy -= f * dy / d; P[j].vx += f * dx / d; P[j].vy += f * dy / d; }
+    E.forEach(([a, b]) => { const dx = P[b].x - P[a].x, dy = P[b].y - P[a].y, d = Math.hypot(dx, dy) || 1, f = (d - 150) * .012; P[a].vx += f * dx / d; P[a].vy += f * dy / d; P[b].vx -= f * dx / d; P[b].vy -= f * dy / d; });
+    P.forEach((p, i) => { if (drag === i) return; p.vx += (W / 2 - p.x) * .002; p.vy += (H / 2 - p.y) * .003; p.vx *= .82; p.vy *= .82; p.x = Math.max(70, Math.min(W - 70, p.x + p.vx)); p.y = Math.max(30, Math.min(H - 30, p.y + p.vy)); }); }
+  function draw() { let s = E.map(([a, b]) => { const on = hover === a || hover === b; return `<line x1="${P[a].x}" y1="${P[a].y}" x2="${P[b].x}" y2="${P[b].y}" stroke="${on ? C.coral : '#cdbb98'}" stroke-width="${on ? 3 : 1.6}"/>`; }).join('');
+    s += NODES.map(([n, t], i) => `<g data-i="${i}" style="cursor:grab"><circle cx="${P[i].x}" cy="${P[i].y}" r="${hover === i ? 16 : 12}" fill="${COL[t]}" stroke="${C.ink}" stroke-width="2"/><text x="${P[i].x}" y="${P[i].y + 28}" text-anchor="middle" font-family="Space Grotesk" font-size="12.5" font-weight="600" fill="${C.ink}">${n}</text></g>`).join('');
+    svg.innerHTML = s; }
+  const pos = e => { const r = svg.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+  svg.addEventListener('pointerdown', e => { const g = e.target.closest('g[data-i]'); if (g) { drag = +g.dataset.i; svg.setPointerCapture(e.pointerId); } });
+  svg.addEventListener('pointermove', e => { const [x, y] = pos(e); if (drag !== null) { P[drag].x = x; P[drag].y = y; } else { const g = e.target.closest('g[data-i]'); hover = g ? +g.dataset.i : -1; } });
+  svg.addEventListener('pointerup', () => drag = null);
+  for (let k = 0; k < 700; k++) step(); draw(); let n = 0; (function loop() { step(); draw(); if (++n < 600) requestAnimationFrame(loop); else setInterval(() => { step(); draw(); }, 80); })(); })();
+
+/* ================= 2D · SPATIAL ================= */
+const ZONES = [
+  ['core', 'Civic & AI governance core', C.aqua, 'The crystal dome, the Sapientia Tower, the AI safety institute and resident councils. The trust layer sits physically at the centre.', ['AI safety & audit', 'Digital twin', 'Civic services']],
+  ['r1', 'Research arcs (r 42–68)', '#b98ad0', 'Eight terraced arcs of university and industry labs, all within a 10-minute walk of the core. Home to the Core and Frontier industry tiers.', ['Foundation models', 'Robotics labs', 'Frontier science']],
+  ['liv', 'Living crescents (r 78–118)', '#f2b880', 'Terraced homes with garden roofs, plus 32 boulevard towers and saucer sky homes. Talent housing is here, 15 minutes from everything.', ['Talent housing', 'Schools & clinics', 'Start-up studios']],
+  ['canal', 'Canal ring (r 123–135)', C.water, 'Flood storage, water taxis and promenades. A cool, blue edge between the city and its ecosystem belt.', ['Water mobility', 'Sponge city', 'Leisure']],
+  ['belt', 'Ecosystem belt (r 140–202)', C.green, 'Eight sectors, each a live AI application test site: water, healing, food, soil, energy, compute, habitat and people.', ['Application industries', 'Pilot sites', 'Farms & forests']],
+  ['rail', 'Heritage rail ring (r 210)', C.coral, 'An elevated streamliner and maglev ring with a Grand Skyport station at each boulevard. Rail heritage is the city\'s spine of identity.', ['Mobility', 'Rail culture', 'Transit-oriented hubs']],
+  ['spokes', '8 boulevards', C.ink, 'Tree-lined boulevards with charging lanes, energy humps and kinetic sidewalks. They are both innovation corridors and ecological corridors.', ['AV & robot delivery', 'Kinetic energy', 'Street life']],
+  ['nature', 'Nature surround', C.dgreen, 'Rainforest to the south, beaches and the sea to the west, and forested hills to the north. The city is immersed in nature.', ['Wellbeing', 'Biodiversity', 'Eco-tourism']],
+];
+let zSel = 'r1';
+function drawSpatial() { const S = 520, c = 260; let s = radialPlan(S);
+  const hl = { core: [0, 34], r1: [42, 68], liv: [78, 118], canal: [123, 135], belt: [140, 202], rail: [206, 214], nature: [255, 260] }[zSel];
+  if (hl) s += `<circle cx="${c}" cy="${c}" r="${(hl[0] + hl[1]) / 2}" fill="none" stroke="${C.coral}" stroke-width="${Math.max(4, hl[1] - hl[0])}" opacity=".45"/>`;
+  if (zSel === 'spokes') for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + Math.PI / 8; s += `<line x1="${c + Math.cos(a) * 36}" y1="${c + Math.sin(a) * 36}" x2="${c + Math.cos(a) * 252}" y2="${c + Math.sin(a) * 252}" stroke="${C.coral}" stroke-width="8" opacity=".6"/>`; }
+  if (zSel === 'nature') s += `<path d="M0 ${S} L0 ${S - 30} Q${c} ${S - 70} ${S} ${S - 30} L${S} ${S}Z" fill="${C.dgreen}"/><rect x="0" y="0" width="22" height="${S}" fill="${C.water}"/>`;
+  ['Water', 'Healing', 'Food', 'Soil', 'Energy', 'Compute', 'Habitat', 'People'].forEach((n, i) => { const a = i * Math.PI / 4; s += `<text x="${c + Math.cos(a) * 171}" y="${c + Math.sin(a) * 171 + 4}" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="500" fill="${C.ink}">${n}</text>`; });
+  for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + Math.PI / 8; s += `<g transform="translate(${c + Math.cos(a) * 210} ${c + Math.sin(a) * 210})"><path d="M-9 4 Q0 -14 9 4Z" fill="${C.mustard}" stroke="${C.ink}" stroke-width="1.5"/></g>`; }
+  $('#spatial').innerHTML = s;
+  const z = ZONES.find(x => x[0] === zSel); $('#spInfo').innerHTML = `<div class="eyebrow" style="color:${C.coral}">Zone</div><h3 style="font-size:24px">${z[1]}</h3><p style="color:var(--ink2);margin:6px 0">${z[3]}</p>${z[4].map(x => `<span class="tag">${x}</span>`).join('')}`;
+  $('#spLeg').innerHTML = ZONES.map(zz => `<button data-z="${zz[0]}" class="${zz[0] === zSel ? 'on' : ''}"><i style="background:${zz[2]}"></i>${zz[1]}</button>`).join('');
+  document.querySelectorAll('#spLeg button').forEach(b => b.onclick = () => { zSel = b.dataset.z; drawSpatial(); }); }
+drawSpatial();
+
+/* ================= 3 · FORMS ================= */
+const MOTIFS = [
+  ['Saucer sky homes', 'Homes and sky gardens on slender stalks, freeing the ground for parks.', `<ellipse cx="32" cy="22" rx="26" ry="7" fill="${C.coral}" stroke="${C.ink}" stroke-width="2"/><path d="M16 20 Q32 2 48 20Z" fill="${C.aqua}" stroke="${C.ink}" stroke-width="2"/><rect x="29" y="28" width="6" height="34" fill="${C.ink}"/>`],
+  ['Boomerang & parabolic roofs', 'Station halls and plazas under soaring concrete arches.', `<path d="M4 60 Q32 0 60 60" fill="none" stroke="${C.ink}" stroke-width="5"/><path d="M12 60 Q32 18 52 60" fill="none" stroke="${C.mustard}" stroke-width="3"/><rect x="2" y="56" width="60" height="6" fill="${C.teal}"/>`],
+  ['Atomic starbursts', 'Wayfinding stars mark stations, clinics and AI kiosks.', `<g transform="translate(32 32)" fill="${C.mustard}" stroke="${C.ink}" stroke-width="1.5">${[0, 30, 60, 90, 120, 150].map(a => `<rect x="-26" y="-2.5" width="52" height="5" rx="2.5" transform="rotate(${a})"/>`).join('')}<circle r="7" fill="${C.coral}"/></g>`],
+  ['Heritage ironwork', 'Restored truss bridges, rail viaducts and station canopies.', `<rect x="2" y="20" width="60" height="5" fill="${C.ink}"/><rect x="2" y="50" width="60" height="5" fill="${C.ink}"/>${[0, 1, 2, 3].map(i => `<path d="M${4 + i * 15} 25 L${11 + i * 15} 50 L${18 + i * 15} 25" fill="none" stroke="${C.brass}" stroke-width="3"/>`).join('')}`],
+  ['Railway clock towers', 'Every Skyport has a clock tower that keeps the city in sync.', `<rect x="26" y="20" width="12" height="42" fill="${C.ink}"/><circle cx="32" cy="18" r="13" fill="${C.cream}" stroke="${C.brass}" stroke-width="4"/><line x1="32" y1="18" x2="32" y2="9" stroke="${C.ink}" stroke-width="2.5"/><line x1="32" y1="18" x2="38" y2="21" stroke="${C.ink}" stroke-width="2.5"/>`],
+  ['Streamliner trains', 'Art-deco streamlined maglevs on the heritage rail ring.', `<path d="M2 44 L2 30 Q2 24 8 24 L44 24 Q58 24 62 44Z" fill="${C.cream}" stroke="${C.ink}" stroke-width="2"/><rect x="2" y="34" width="58" height="3.5" fill="${C.coral}"/>${[0, 1, 2].map(i => `<rect x="${8 + i * 12}" y="27" width="8" height="5" rx="2" fill="${C.aqua}"/>`).join('')}`],
+  ['Sky lanes', 'Air-taxi corridors at set heights, lit at night like highways.', `<path d="M2 40 Q32 10 62 30" fill="none" stroke="${C.teal}" stroke-width="2" stroke-dasharray="4 3"/><ellipse cx="34" cy="22" rx="12" ry="4.5" fill="${C.coral}" stroke="${C.ink}" stroke-width="1.5"/><path d="M28 20 Q34 12 40 20Z" fill="${C.aqua}" stroke="${C.ink}" stroke-width="1.5"/>`],
+  ['Glass tube walkways', 'Climate-controlled sky bridges with people movers between towers.', `<rect x="2" y="26" width="60" height="14" rx="7" fill="${C.aqua}" fill-opacity=".5" stroke="${C.ink}" stroke-width="2"/><circle cx="22" cy="33" r="4" fill="${C.coral}"/><circle cx="40" cy="33" r="4" fill="${C.mustard}"/><rect x="0" y="40" width="5" height="22" fill="${C.ink}"/><rect x="59" y="40" width="5" height="22" fill="${C.ink}"/>`],
+];
+$('#motifs').innerHTML = MOTIFS.map(m => `<div class="card motif"><svg viewBox="0 0 64 64">${m[2]}</svg><h3>${m[0]}</h3><p>${m[1]}</p></div>`).join('');
+const SCENES = [
+  ['Grand Skyport', 'Heritage rail ring × boulevard', 'Streamliner trains arrive under a parabolic arch. Air taxis land on the roof, the clock tower keeps time, and the old station hall becomes the Hall of Algorithms.', s1()],
+  ['Saucer sky-home district', 'Living crescents', 'Saucer homes on stalks rise above terraced garden crescents. Glass tube walkways link them, and the ground stays green.', s2()],
+  ['Heritage rail promenade', 'Boulevard & canal edge', 'Restored railcars become cafés and maker labs. Robots serve tea, kids skate under truss bridges, and footstep tiles light up the path.', s3()],
+];
+function s1() { return `<svg viewBox="0 0 400 240"><rect width="400" height="240" fill="#bfe9f2"/><rect y="190" width="400" height="50" fill="${C.ink}"/><path d="M60 190 Q200 -10 340 190" fill="none" stroke="${C.cream}" stroke-width="12"/><path d="M90 190 Q200 40 310 190" fill="none" stroke="${C.mustard}" stroke-width="4"/>
+  <rect x="190" y="70" width="20" height="120" fill="${C.iron}"/><circle cx="200" cy="78" r="18" fill="${C.cream}" stroke="${C.brass}" stroke-width="4"/><line x1="200" y1="78" x2="200" y2="66" stroke="${C.ink}" stroke-width="2.5"/><line x1="200" y1="78" x2="209" y2="82" stroke="${C.ink}" stroke-width="2.5"/>
+  <g class="a-train" style="animation-duration:9s"><path d="M0 186 L0 170 Q0 164 8 164 L150 164 Q172 164 182 186Z" fill="${C.cream}" stroke="${C.ink}" stroke-width="2"/><rect y="174" width="178" height="4" fill="${C.coral}"/></g>
+  <g class="a-bob"><ellipse cx="300" cy="60" rx="22" ry="7" fill="${C.coral}" stroke="${C.ink}" stroke-width="2"/><path d="M290 58 Q300 46 310 58Z" fill="${C.aqua}" stroke="${C.ink}" stroke-width="1.5"/></g>
+  <g class="a-blink"><g transform="translate(60 40)" fill="${C.mustard}">${[0, 45, 90, 135].map(a => `<rect x="-10" y="-1.2" width="20" height="2.4" transform="rotate(${a})"/>`).join('')}</g></g></svg>`; }
+function s2() { const t = (x, h, c, w) => `<rect x="${x - 4}" y="${200 - h}" width="8" height="${h}" fill="${C.cream}" stroke="${C.ink}" stroke-width="1.5"/><ellipse cx="${x}" cy="${200 - h}" rx="${w}" ry="${w * .28}" fill="${c}" stroke="${C.ink}" stroke-width="2"/><path d="M${x - w * .65} ${198 - h} Q${x} ${200 - h - w * .8} ${x + w * .65} ${198 - h}Z" fill="${C.aqua}" stroke="${C.ink}" stroke-width="1.5"/>`;
+  return `<svg viewBox="0 0 400 240"><rect width="400" height="240" fill="#bfe9f2"/>${[0, 1, 2, 3].map(i => `<path d="M0 ${200 - i * 14} L400 ${200 - i * 14} L400 ${214 - i * 14} L0 ${214 - i * 14}Z" fill="${i % 2 ? '#e8d7bc' : C.green}" opacity=".9"/>`).join('')}<rect y="200" width="400" height="40" fill="${C.dgreen}"/>
+  ${t(80, 150, C.coral, 34)}${t(200, 180, C.mustard, 40)}${t(320, 140, C.teal, 32)}<rect x="104" y="90" width="72" height="10" rx="5" fill="${C.aqua}" fill-opacity=".6" stroke="${C.ink}"/><rect x="224" y="100" width="72" height="10" rx="5" fill="${C.aqua}" fill-opacity=".6" stroke="${C.ink}"/>
+  <circle cx="130" cy="95" r="3" fill="${C.coral}" class="a-blink"/><g class="a-fly" style="animation-duration:11s"><ellipse cx="0" cy="40" rx="14" ry="5" fill="${C.rose}" stroke="${C.ink}" stroke-width="1.5"/></g></svg>`; }
+function s3() { return `<svg viewBox="0 0 400 240"><rect width="400" height="240" fill="#ffe6c4"/><rect y="170" width="400" height="70" fill="#d8c8a8"/>${Array.from({ length: 20 }, (_, i) => `<rect x="${i * 20 + 2}" y="200" width="16" height="10" rx="2" fill="${C.aqua}" class="a-blink" style="animation-delay:${i * .15}s" opacity=".7"/>`).join('')}
+  <rect x="20" y="60" width="360" height="10" fill="${C.iron}"/>${Array.from({ length: 9 }, (_, i) => `<path d="M${20 + i * 40} 70 L${40 + i * 40} 120 L${60 + i * 40} 70" fill="none" stroke="${C.brass}" stroke-width="4"/>`).join('')}<rect x="20" y="120" width="360" height="8" fill="${C.iron}"/>
+  <rect x="40" y="135" width="130" height="40" rx="8" fill="${C.coral}" stroke="${C.ink}" stroke-width="2"/>${[0, 1, 2, 3].map(i => `<rect x="${52 + i * 30}" y="143" width="20" height="14" rx="3" fill="${C.cream}"/>`).join('')}<text x="105" y="171" text-anchor="middle" font-family="Righteous" font-size="11" fill="#fff">CAFÉ 1928</text>
+  <rect x="220" y="135" width="130" height="40" rx="8" fill="${C.teal}" stroke="${C.ink}" stroke-width="2"/><text x="285" y="160" text-anchor="middle" font-family="Righteous" font-size="12" fill="#fff">MAKER CAR</text>
+  <g class="a-bob"><rect x="190" y="160" width="16" height="22" rx="5" fill="#eef2f4" stroke="${C.ink}"/><circle cx="198" cy="156" r="6" fill="#eef2f4" stroke="${C.ink}"/><circle cx="196" cy="155" r="1.5" fill="${C.teal}"/><circle cx="200" cy="155" r="1.5" fill="${C.teal}"/></g></svg>`; }
+$('#scenes').innerHTML = SCENES.map(s => `<div class="card scene2">${s[3]}<div class="cb"><div class="eyebrow">${s[1]}</div><h3>${s[0]}</h3><p style="font-size:14px;color:var(--ink2)">${s[2]}</p></div></div>`).join('');
+const DEPLOY = [['AV shuttles on dedicated lanes', 'Inner ring road', 8, 'Operating permit, remote-ops centre', 'Year 1'], ['Sidewalk robot & drone delivery', 'Boulevards, Agri Belt', 8, 'Airspace corridors, sidewalk rules', 'Year 1'], ['AI-assisted clinics', 'Sanctuary Gardens + nodes', 8, 'Clinical governance, data consent', 'Year 1'], ['AI tutors (Socratic mode)', 'Research arcs, schools', 9, 'Curriculum approval, privacy', 'Year 1'],
+  ['Digital twin city operations', 'City-wide', 8, 'Sensor network, data trust', 'Year 1'], ['Heritage streamliner maglev ring', 'Rail ring r 210', 7, 'Rail safety certification', 'Year 3'], ['Air-taxi sky lanes (eVTOL)', 'Vertiport + Skyports', 6, 'Aviation certification', 'Year 4'], ['Resonant wireless power to devices', 'Boulevards, homes', 5, 'Spectrum & safety approval', 'Year 4'], ['Saucer sky-home towers', 'Living crescents', 7, 'Structural & fire code review', 'Year 5']];
+$('#deployBody').innerHTML = DEPLOY.map(d => `<tr><td><b>${d[0]}</b></td><td>${d[1]}</td><td><span class="trl"><i style="width:${d[2] / 9 * 100}%"></i></span> <span class="mono" style="font-size:12px">TRL ${d[2]}</span></td><td>${d[3]}</td><td class="t">${d[4]}</td></tr>`).join('');
+
+/* ================= 4 · SCENARIOS ================= */
+const car = (x, y, c = C.coral) => `<g transform="translate(${x} ${y})"><rect x="0" y="-14" width="54" height="16" rx="8" fill="${c}" stroke="${C.ink}" stroke-width="2"/><path d="M10 -14 Q27 -30 44 -14Z" fill="${C.aqua}" stroke="${C.ink}" stroke-width="1.5"/><circle cx="12" cy="3" r="5" fill="${C.ink}"/><circle cx="42" cy="3" r="5" fill="${C.ink}"/></g>`;
+const ground = `<rect y="230" width="600" height="70" fill="#9aa69a"/><rect y="252" width="600" height="4" fill="#fff" opacity=".6"/>`;
+const SC = [
+  { k: 'transport', n: 'AI + Transport', i: '🚄', p: 'Feng Shui: traffic should flow like water', site: 'Inner ring, boulevards, Skyports', ph: 'Phase I', kp: [['−35%', 'commute time'], ['70%', 'trips by transit, AV or bike'], ['0', 'traffic deaths (Vision Zero)']],
+    j: ['A resident asks the city app for a door-to-door trip', 'AI plans maglev + AV pod + bike, priced and timed', 'Signals adapt live and give priority to buses, walkers and ambulances', 'The digital twin predicts congestion 30 minutes ahead and reroutes demand'], st: 'Digital twin · V2X · adaptive signals · MaaS app',
+    svg: () => `<rect width="600" height="300" fill="#cfeef5"/>${ground}<rect y="150" width="600" height="8" fill="${C.iron}"/><g class="a-train" style="animation-duration:8s"><path d="M0 146 L0 128 Q0 120 10 120 L220 120 Q250 120 262 146Z" fill="${C.cream}" stroke="${C.ink}" stroke-width="2"/><rect y="132" width="256" height="5" fill="${C.coral}"/></g><g class="a-drive">${car(0, 246)}</g><g class="a-drive" style="animation-delay:-3.5s">${car(0, 246, C.teal)}</g><g transform="translate(470 40)"><rect x="-4" y="0" width="8" height="190" fill="${C.ink}"/><rect x="-14" y="10" width="28" height="60" rx="6" fill="${C.ink}"/><circle cx="0" cy="24" r="7" fill="#ff4a4a" class="a-blink"/><circle cx="0" cy="54" r="7" fill="#4ade80" class="a-blink" style="animation-delay:.8s"/></g>` },
+  { k: 'health', n: 'AI + Healthcare', i: '⚕', p: 'Hippocratic: first, do no harm; clinicians decide', site: 'Sanctuary Gardens + neighbourhood nodes', ph: 'Phase I', kp: [['≤ 800 m', 'to an AI micro-clinic'], ['−60%', 'specialist wait'], ['8 min', 'drone defibrillator arrival']],
+    j: ['A wearable flags an irregular heartbeat, with the resident\'s consent', 'AI triage books a same-day micro-clinic slot', 'A clinician reviews the AI-assisted diagnosis and decides the care plan', 'In an emergency, a drone brings a defibrillator while an ambulance AV is dispatched'], st: 'Federated learning · medical LLMs · personal health vault · medical drones',
+    svg: () => `<rect width="600" height="300" fill="#e6f7f2"/>${ground}<rect x="360" y="110" width="180" height="120" fill="#fff" stroke="${C.ink}" stroke-width="2.5"/><rect x="430" y="70" width="40" height="40" fill="${C.coral}" stroke="${C.ink}" stroke-width="2"/><rect x="445" y="76" width="10" height="28" fill="#fff"/><rect x="436" y="85" width="28" height="10" fill="#fff"/>${[0, 1, 2].map(i => `<rect x="${380 + i * 52}" y="140" width="34" height="26" fill="${C.aqua}" stroke="${C.ink}"/>`).join('')}
+      <g class="a-fly" style="animation-duration:6s"><g transform="translate(0 60)"><rect x="-16" y="-6" width="32" height="12" rx="4" fill="#fff" stroke="${C.ink}" stroke-width="2"/><rect x="-6" y="-4" width="12" height="8" fill="${C.coral}"/><line x1="-26" y1="-10" x2="-10" y2="-10" stroke="${C.ink}" stroke-width="2"/><line x1="10" y1="-10" x2="26" y2="-10" stroke="${C.ink}" stroke-width="2"/></g></g>
+      <g transform="translate(120 170)"><circle r="40" fill="none" stroke="${C.coral}" stroke-width="3" opacity=".5"/><path d="M-30 0 L-14 0 L-8 -18 L0 18 L8 -8 L14 0 L30 0" fill="none" stroke="${C.coral}" stroke-width="4" class="a-blink"/></g>` },
+  { k: 'edu', n: 'AI + Education', i: '📚', p: 'Socratic & Confucian: learn by questioning', site: 'Research arcs, every school', ph: 'Phase I', kp: [['1 : 1', 'AI tutor for every student'], ['+30%', 'learning gains (target)'], ['50k / yr', 'adults re-skilled']],
+    j: ['Each student gets an AI tutor that asks rather than tells', 'Teachers use an AI co-pilot to spot who needs help', 'Students run real projects with labs in the research arcs', 'Adults re-skill at the Lifelong Learning College'], st: 'Tutor LLMs · learning analytics · project labs · VR field trips',
+    svg: () => `<rect width="600" height="300" fill="#fff1d6"/>${ground}<rect x="296" y="90" width="8" height="140" fill="${C.cream}" stroke="${C.ink}"/><ellipse cx="300" cy="90" rx="110" ry="26" fill="${C.mustard}" stroke="${C.ink}" stroke-width="3"/><path d="M220 86 Q300 30 380 86Z" fill="${C.aqua}" stroke="${C.ink}" stroke-width="2.5"/>
+      <g class="a-spin" style="transform-origin:300px 60px;animation-duration:9s">${[0, 1, 2, 3, 4, 5].map(i => { const a = i * Math.PI / 3; return `<circle cx="${300 + Math.cos(a) * 150}" cy="${60 + Math.sin(a) * 40}" r="10" fill="${[C.coral, C.teal, C.rose][i % 3]}" stroke="${C.ink}" stroke-width="2"/>`; }).join('')}</g><text x="300" y="96" text-anchor="middle" font-family="Righteous" font-size="16" fill="${C.ink}">SKY CAMPUS</text>
+      ${[0, 1, 2, 3].map(i => `<g transform="translate(${90 + i * 140} 214)"><circle cy="-10" r="7" fill="#a86e4b"/><rect x="-6" y="-3" width="12" height="18" rx="4" fill="${[C.coral, C.teal, C.mustard, C.rose][i]}"/><text x="14" y="-18" font-size="16">?</text></g>`).join('')}` },
+  { k: 'robot', n: 'AI Robotics', i: '🤖', p: 'Vitruvian: strong, useful and beautiful', site: 'Proving grounds, factories, homes', ph: 'Phase II', kp: [['40k', 'service robots (2035)'], ['0', 'dull, dirty or dangerous jobs left unautomated'], ['100%', 'human-supervised']],
+    j: ['Humanoids train in mock homes and factories in simulation, then in reality', 'Service robots assist in hospitals, libraries and homes', 'Inspection robots maintain tunnels, pipes and bridges', 'A robot sports league builds public trust'], st: 'Embodied foundation models · sim-to-real · safety certification',
+    svg: () => `<rect width="600" height="300" fill="#e9e6ff"/>${ground}<rect x="80" y="200" width="120" height="30" fill="${C.ink}"/><g class="a-arm" style="transform-origin:140px 200px"><rect x="132" y="110" width="16" height="90" rx="6" fill="${C.mustard}" stroke="${C.ink}" stroke-width="2"/><rect x="128" y="96" width="60" height="14" rx="6" fill="${C.mustard}" stroke="${C.ink}" stroke-width="2"/><path d="M188 96 l10 -8 M188 110 l10 8" stroke="${C.ink}" stroke-width="4"/></g>
+      <g transform="translate(400 120)" class="a-bob"><rect x="-26" y="20" width="52" height="64" rx="12" fill="#eef2f4" stroke="${C.ink}" stroke-width="2.5"/><circle cy="0" r="22" fill="#eef2f4" stroke="${C.ink}" stroke-width="2.5"/><rect x="-14" y="-6" width="28" height="10" rx="5" fill="${C.ink}"/><circle cx="-7" cy="-1" r="3" fill="${C.aqua}" class="a-blink"/><circle cx="7" cy="-1" r="3" fill="${C.aqua}" class="a-blink"/><rect x="-16" y="84" width="10" height="26" fill="${C.ink}"/><rect x="6" y="84" width="10" height="26" fill="${C.ink}"/><rect x="26" y="30" width="30" height="8" rx="4" fill="#eef2f4" stroke="${C.ink}" stroke-width="2"/><rect x="52" y="20" width="18" height="24" rx="3" fill="${C.coral}" stroke="${C.ink}" stroke-width="2"/></g>` },
+  { k: 'av', n: 'Autonomous Driving', i: '🚗', p: "Ma'at: every life weighs the same on the scale", site: 'Inner ring → all boulevards', ph: 'Phase I–II', kp: [['L4', 'driverless in ODD'], ['100%', 'incidents in a public ledger'], ['−40%', 'road space (back to parks)']],
+    j: ['Start on a closed track, then move to dedicated lanes, then mixed streets', 'Shared robotaxi and shuttle fleet, with no private parking minimums', 'Remote human safety operators and a public incident ledger', 'Lanes freed from parking become gardens'], st: 'L4 driving stack · lidar + radar + cameras · V2X · HD maps · remote ops',
+    svg: () => `<rect width="600" height="300" fill="#dff0ff"/>${ground}<g class="a-drive" style="animation-duration:9s"><g transform="translate(0 0)">${car(0, 246, C.teal)}<g transform="translate(54 236)"><path d="M0 0 L120 -40 L120 40Z" fill="${C.coral}" opacity=".18" class="a-sweep"/></g><circle cx="27" cy="226" r="5" fill="${C.coral}" class="a-blink"/></g></g>
+      <g transform="translate(420 200)"><circle cy="-20" r="7" fill="#7a4e32"/><rect x="-6" y="-13" width="12" height="20" rx="4" fill="${C.mustard}"/><rect x="-5" y="7" width="4" height="16" fill="${C.ink}"/><rect x="1" y="7" width="4" height="16" fill="${C.ink}"/></g><rect x="380" y="232" width="90" height="18" fill="#fff" opacity=".5"/>${[0, 1, 2, 3, 4].map(i => `<rect x="${384 + i * 18}" y="232" width="8" height="18" fill="#fff"/>`).join('')}` },
+  { k: 'deliv', n: 'Unmanned Delivery', i: '📦', p: 'Seventh Generation: fewer trucks, cleaner air', site: 'Agri Belt micro-hubs, all boulevards', ph: 'Phase I', kp: [['−70%', 'delivery truck trips'], ['15 min', 'median delivery'], ['0', 'tailpipe emissions']],
+    j: ['An order is routed to the nearest micro-hub', 'The last 800 m goes by sidewalk robot or drone, depending on weight and weather', 'Underground freight tubes serve the factories', 'Packaging returns to the circular materials hub'], st: 'Drone corridors · sidewalk robots · freight tubes · route AI',
+    svg: () => `<rect width="600" height="300" fill="#fff4e0"/>${ground}<rect x="420" y="130" width="120" height="100" fill="#fff" stroke="${C.ink}" stroke-width="2.5"/><path d="M410 130 L480 90 L550 130Z" fill="${C.coral}" stroke="${C.ink}" stroke-width="2.5"/><rect x="465" y="180" width="30" height="50" fill="${C.teal}"/>
+      <g transform="translate(470 40)"><g class="a-bob"><rect x="-18" y="-6" width="36" height="12" rx="4" fill="#eef2f4" stroke="${C.ink}" stroke-width="2"/><line x1="-30" y1="-10" x2="-12" y2="-10" stroke="${C.ink}" stroke-width="2"/><line x1="12" y1="-10" x2="30" y2="-10" stroke="${C.ink}" stroke-width="2"/></g><g class="a-drop"><rect x="-9" y="8" width="18" height="16" fill="${C.mustard}" stroke="${C.ink}" stroke-width="2"/></g></g>
+      <g class="a-drive" style="animation-duration:10s"><g transform="translate(0 222)"><rect width="34" height="22" rx="5" fill="#eef2f4" stroke="${C.ink}" stroke-width="2"/><rect x="6" y="-8" width="4" height="10" fill="${C.ink}"/><circle cx="8" cy="-10" r="3" fill="${C.coral}" class="a-blink"/><circle cx="8" cy="24" r="4" fill="${C.ink}"/><circle cx="26" cy="24" r="4" fill="${C.ink}"/></g></g>` },
+  { k: 'energy', n: 'AI + Energy', i: '⚡', p: 'Resonance, not resistance', site: 'Tesla relay ring + Energy Fields', ph: 'Phase I–II', kp: [['$0', 'resident power bills'], ['100%', 'renewable (2035)'], ['0.5 MW', 'from footsteps & traffic']],
+    j: ['Solar leaves, wind, geothermal and space solar feed the grid', 'AI balances supply and demand every second', 'Tesla-style relay towers deliver power wirelessly to devices and vehicles', 'Kinetic sidewalks and humps top up the grid'], st: 'AI microgrid · resonant wireless power · storage · kinetic harvesting',
+    svg: () => `<rect width="600" height="300" fill="#13213c"/><rect y="230" width="600" height="70" fill="#2c3c5c"/>${[0, 1, 2, 3, 4, 5].map(i => `<path d="M${300 - 30 + i * 2} 230 L${300 - 10 + i * 3} ${100 + i * 20}" stroke="${C.brass}" stroke-width="2"/><path d="M${300 + 30 - i * 2} 230 L${300 + 10 - i * 3} ${100 + i * 20}" stroke="${C.brass}" stroke-width="2"/>`).join('')}
+      <path d="M270 100 Q300 60 330 100Z" fill="#b87333" stroke="${C.ink}" stroke-width="2"/><circle cx="300" cy="100" r="6" fill="${C.aqua}"/><circle cx="300" cy="100" r="10" fill="none" stroke="${C.aqua}" stroke-width="3" class="a-pulse"/><circle cx="300" cy="100" r="10" fill="none" stroke="${C.aqua}" stroke-width="3" class="a-pulse" style="animation-delay:1s"/>
+      <path d="M300 80 L285 50 L298 52 L282 20" fill="none" stroke="#dff2ff" stroke-width="3" class="a-blink"/><path d="M310 82 L330 55 L318 54 L340 30" fill="none" stroke="#dff2ff" stroke-width="2.5" class="a-blink" style="animation-delay:.4s"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(i => `<rect x="${40 + i * 70}" y="262" width="50" height="10" rx="3" fill="${C.aqua}" class="a-blink" style="animation-delay:${i * .2}s" opacity=".8"/>`).join('')}` },
+  { k: 'agri', n: 'AI + Agriculture', i: '🌾', p: 'Three Sisters: crops that support each other', site: 'Agri Belt crop rings + vertical farms', ph: 'Phase I', kp: [['30%', 'food grown in the city'], ['−90%', 'water per kg (vertical)'], ['95%', 'organics returned to soil']],
+    j: ['Soil sensors and drones map every crop ring', 'AI plans rotations and companion planting', 'Vertical farms grow greens year-round on recovered heat', 'Clinics prescribe fresh produce boxes'], st: 'Soil & crop sensing · AI agronomy · vertical farms · robot harvest',
+    svg: () => `<rect width="600" height="300" fill="#e6f5d8"/>${[0, 1, 2, 3, 4, 5].map(i => `<rect y="${230 + i * 12}" width="600" height="12" fill="${['#7aa040', '#b0a040', '#5e8a3a', '#9ab84a', '#c0a858', '#6a9a48'][i]}"/>`).join('')}<rect x="380" y="40" width="90" height="190" fill="#1a2a30" stroke="${C.ink}" stroke-width="2.5"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(i => `<rect x="388" y="${52 + i * 22}" width="74" height="3" fill="#e07ad8" class="a-blink" style="animation-delay:${i * .1}s"/>${[0, 1, 2, 3, 4].map(k => `<circle cx="${396 + k * 15}" cy="${62 + i * 22}" r="5" fill="${C.green}"/>`).join('')}`).join('')}
+      <g class="a-fly" style="animation-duration:10s"><g transform="translate(0 90)"><rect x="-14" y="-5" width="28" height="10" rx="4" fill="#eef2f4" stroke="${C.ink}" stroke-width="2"/><line x1="-24" y1="-8" x2="-8" y2="-8" stroke="${C.ink}" stroke-width="2"/><line x1="8" y1="-8" x2="24" y2="-8" stroke="${C.ink}" stroke-width="2"/><path d="M0 5 L-20 60 L20 60Z" fill="${C.aqua}" opacity=".25"/></g></g>` },
+  { k: 'civic', n: 'AI + Civic Governance', i: '🏛', p: 'Ubuntu: I am because we are', site: 'Civic dome, every district', ph: 'Phase I', kp: [['100%', 'public algorithms audited'], ['15k', 'residents on AI councils'], ['24 / 7', 'one-window services']],
+    j: ['Every public algorithm gets a published purpose, an audit and an off-switch', 'Resident councils review AI changes in the civic dome', 'One-window AI services handle permits, benefits and talent visas', 'A civic dividend shares the city\'s AI revenue'], st: 'Audit tooling · participatory budgeting · service agents · data trust',
+    svg: () => `<rect width="600" height="300" fill="#efe6ff"/>${ground}<path d="M160 230 Q300 40 440 230Z" fill="${C.aqua}" fill-opacity=".45" stroke="${C.ink}" stroke-width="3"/>${[0, 1, 2, 3, 4].map(i => `<path d="M${180 + i * 6} 230 Q300 ${70 + i * 20} ${420 - i * 6} 230" fill="none" stroke="${C.ink}" stroke-width="1" opacity=".4"/>`).join('')}
+      <rect x="250" y="150" width="100" height="56" rx="6" fill="${C.ink}"/><text x="300" y="172" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="${C.aqua}">ALGORITHM #42</text><text x="300" y="192" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" fill="#4ade80" class="a-blink">✓ APPROVED</text>
+      ${[0, 1, 2, 3, 4, 5].map(i => `<g transform="translate(${200 + i * 40} 222)"><circle cy="-14" r="6" fill="${['#3b2219', '#a86e4b', '#e0ac86', '#7a4e32', '#f1c9a5', '#5a3825'][i]}"/><rect x="-5" y="-8" width="10" height="14" rx="3" fill="${[C.coral, C.teal, C.mustard, C.rose, C.coral, C.teal][i]}"/><rect x="${i % 2 ? 3 : -9}" y="-26" width="6" height="10" fill="#4ade80" class="a-blink" style="animation-delay:${i * .3}s"/></g>`).join('')}` },
+];
+$('#scnTabs').innerHTML = SC.map((s, i) => `<button class="${i ? '' : 'on'}" data-k="${s.k}">${s.i} ${s.n}</button>`).join('');
+function drawScn(k) { const s = SC.find(x => x.k === k); $('#scnBody').innerHTML = `<div><svg viewBox="0 0 600 300">${s.svg()}</svg><div class="kp">${s.kp.map(x => `<span><b>${x[0]}</b> ${x[1]}</span>`).join('')}</div></div>
+  <div><div class="eyebrow">Smart scenario</div><h3>${s.i} ${s.n}</h3><div class="meta"><div>Principle<b>${s.p.split(':')[0]}</b></div><div>Pilot site<b>${s.site}</b></div><div>Launch<b>${s.ph}</b></div></div>
+  <p style="font-size:13.5px;color:var(--ink2);margin-bottom:8px"><i>${s.p}</i></p><ol class="flow">${s.j.map(x => `<li>${x}</li>`).join('')}</ol><p style="font-size:13px;margin-top:10px;color:var(--mute)">Stack: <span class="mono" style="color:var(--ink)">${s.st}</span></p>
+  <a class="cta" href="../explorer-v2/index.html">See it live in the 3D city ↗</a></div>`; }
+drawScn('transport'); tabify('#scnTabs', b => drawScn(b.dataset.k));
+</script>
+</body>
+</html>
