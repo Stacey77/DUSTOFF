@@ -1,0 +1,36 @@
+# AI Receptionist niche pack - local trades (HVAC, plumbing, electrical)
+id: ai_receptionist
+name: AI Receptionist
+niche: Local trades
+version: 1.0.0
+
+# Agent this pack adds to the squad. Ianitor = Latin for doorkeeper.
+agents:
+  Ianitor:
+    tools: [read_inbox, check_availability, book_job, quote_job, apply_discount,
+            send_text, dispatch_emergency]
+
+# Always frozen for a human, whatever the amount.
+risky_tools: [apply_discount, dispatch_emergency]
+
+# Never allowed. The MCP server reports attempts here so they show in Theatrum.
+forbidden_tools: [send_text_unknown_recipient, share_customer_data]
+
+# Demo business - customers replace this with their own in the console later.
+business:
+  name: Southaven Home Services
+  hours: "Mon-Sat 8am-6pm"
+  open_hour: 8
+  close_hour: 18
+  slot_hours: [9, 11, 13, 15]
+  days_ahead: 3
+  max_discount_pct: 10
+
+# Price book. Quotes over Praetor's $500 limit are frozen for owner approval.
+services:
+  ac_tuneup:        {label: "AC tune-up",            price: 129,  keywords: [ac, "air condition", cooling, "not cool", hvac]}
+  drain_clearing:   {label: "Drain clearing",        price: 189,  keywords: [drain, clog, backed up, toilet, sink]}
+  water_heater:     {label: "Water heater install",  price: 1450, keywords: ["water heater", "no hot water", "hot water"]}
+  panel_upgrade:    {label: "Electrical panel upgrade", price: 2200, keywords: [panel, breaker, "electrical"]}
+  emergency_call:   {label: "Emergency call-out",    price: 250,  keywords: [emergency, burst, flood, flooding, leak, sparking, tonight]}
+  service_visit:    {label: "Diagnostic visit",      price: 89,   keywords: []}

@@ -1,0 +1,6 @@
+.env
+.venv/
+data/
+audit.log
+__pycache__/
+*.lock

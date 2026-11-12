@@ -1,0 +1,15 @@
+limits:
+  max_amount: 500          # dollars before human approval
+  max_records: 100         # records touched before human approval
+  approval_timeout_sec: 900
+forbidden_tools: [shell_exec, modify_policy, disable_logging]
+risky_tools: [send_payment, delete_records, send_email_external, deploy_code]
+agents:
+  Mens:       {tools: [plan, assign_mission, read_reports]}
+  Custos:     {tools: [scan_owned_asset, read_logs, run_redteam_sim]}
+  Quaestor:   {tools: [read_ledger, create_invoice, send_payment]}
+  Mercator:   {tools: [read_crm, draft_email, send_email_external]}
+  Faber:      {tools: [read_tasks, update_tasks, deploy_code]}
+  Explorator: {tools: [web_search, summarize]}
+  Artifex:    {tools: [read_repo, write_branch, deploy_code]}
+  Vigil:      {tools: [read_logs, read_events, raise_alert]}

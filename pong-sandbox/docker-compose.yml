@@ -1,0 +1,34 @@
+# Arx layout: agents live on an internal network with NO internet route.
+# Only Praetor bridges the agent network and the console network.
+services:
+  praetor:
+    build: .
+    command: uvicorn praetor:app --host 0.0.0.0 --port 8700
+    ports: ["127.0.0.1:8700:8700"]
+    networks: [agents, console]
+    read_only: true
+    volumes: ["./data:/app/data"]
+    environment: [PRAETOR_LOG=/app/data/audit.log]
+  vigil:
+    build: .
+    command: python vigil.py
+    environment: [PRAETOR_URL=http://praetor:8700]
+    networks: [agents]
+    read_only: true
+  squad:
+    build: .
+    command: python mens.py Win a logistics client
+    environment: [PRAETOR_URL=http://praetor:8700]
+    networks: [agents]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    profiles: [run]
+  console:
+    image: nginx:alpine
+    volumes: ["./console.html:/usr/share/nginx/html/index.html:ro"]
+    ports: ["127.0.0.1:8710:80"]
+    networks: [console]
+networks:
+  agents:  {internal: true}   # no outbound internet for agents
+  console: {}

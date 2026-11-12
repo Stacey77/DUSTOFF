@@ -1,0 +1,221 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pong Sandbox Console - Nova Digitus</title>
+<style>
+:root{--bg:#060a12;--pn:#0c1524;--ln:#1b3350;--cy:#4ff;--g:#3f8;--y:#fd3;--r:#f45;--tx:#d6e6f5;--mu:#8aa}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:Segoe UI,Arial,sans-serif;display:flex;height:100vh}
+nav{width:215px;flex:none;background:#08101c;border-right:1px solid var(--ln);padding:16px 0;overflow:auto}
+nav h1{font-size:17px;color:var(--cy);margin:0 18px 4px;letter-spacing:2px}nav small{display:block;margin:0 18px 18px;color:#7aa}
+nav a{display:flex;justify-content:space-between;align-items:center;padding:11px 18px;color:var(--tx);text-decoration:none;cursor:pointer;border-left:3px solid transparent}
+nav a.on,nav a:hover{background:#0f1d30;border-left-color:var(--cy)}
+nav .plan{margin:18px;padding:10px;border:1px solid var(--ln);border-radius:8px;font-size:12px}
+main{flex:1;overflow:auto;padding:22px;position:relative}
+section{display:none}section.on{display:block}
+h2{margin:0 0 14px;color:var(--cy);font-weight:600}h3{margin:18px 0 8px;font-size:15px;color:#bfe}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.card{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:16px}
+.big{font-size:30px;font-weight:700}.g{color:var(--g)}.y{color:var(--y)}.r{color:var(--r)}.mut{color:var(--mu);font-size:13px}
+button{background:#1d4f7a;color:#fff;border:0;border-radius:7px;padding:8px 13px;font-weight:600;cursor:pointer;margin:3px}
+button:hover{filter:brightness(1.15)}button.red{background:#c8323f}button.grn{background:#1a8a4f}button.ghost{background:transparent;border:1px solid var(--ln)}button:disabled{opacity:.4;cursor:not-allowed}
+select,input{background:#0a1320;color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:7px}
+#arenaWrap{position:relative;height:58vh;background:#03060c;border:1px solid var(--ln);border-radius:12px;overflow:hidden}
+canvas{width:100%;height:100%;display:block}
+#feed{height:150px;overflow:auto;font-family:Consolas,monospace;font-size:12px;margin-top:10px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:#123;border:1px solid var(--ln)}
+.chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.c-new{background:#1d3550}.c-booked,.c-sent,.c-dispatched{background:#14402a;color:#7fe0a6}.c-awaiting_approval,.c-quoted,.c-emergency{background:#4a3d10;color:#ffd75e}
+.c-flagged,.c-declined,.c-not_dispatched{background:#4a1820;color:#ff8a95}
+table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid var(--ln);text-align:left;font-size:13px;vertical-align:top}th{color:var(--mu);font-weight:600}
+.tablewrap{overflow-x:auto}
+#status{position:absolute;top:22px;right:22px}
+#killbar{display:none;background:#4a1820;border:1px solid #c8323f;border-radius:10px;padding:10px 14px;margin-bottom:14px}
+pre{white-space:pre-wrap;font-size:12px;max-height:240px;overflow:auto;background:#03060c;border:1px solid var(--ln);border-radius:8px;padding:10px;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+@media(max-width:760px){body{flex-direction:column;height:auto}nav{width:100%;display:flex;flex-wrap:wrap;padding:8px}nav h1,nav small,nav .plan{display:none}nav a{padding:8px 10px;border-left:0}#status{position:static;margin-bottom:10px}main{padding:16px}}
+</style></head><body>
+<nav>
+ <h1>PONG SANDBOX</h1><small>by Nova Digitus Designs</small>
+ <a data-s="theatrum" class="on">Theatrum (Live)</a>
+ <a data-s="desk">Front Desk <span id="dc" class="badge">0</span></a>
+ <a data-s="approvals">Approvals <span id="pc" class="badge">0</span></a>
+ <a data-s="squad">Squad</a><a data-s="roi">ROI Dashboard</a><a data-s="packs">Niche Packs</a>
+ <a data-s="settings">Settings</a><a data-s="plans">Plans &amp; Billing</a>
+ <div class="plan">Plan: <b id="planName">Trial</b><br><span class="mut" id="planInfo"></span></div>
+</nav>
+<main>
+<div id="status" class="badge">connecting...</div>
+<div id="killbar"><b class="r">KILL SWITCH ENGAGED</b> <span class="mut">Every agent action is blocked until you re-arm.</span> <button class="grn" onclick="rearm()">Re-arm sandbox</button></div>
+
+<section id="theatrum" class="on"><h2>Theatrum · Live Attack View</h2>
+ <div class="row" style="margin-bottom:10px">Symbols <select id="sym"><option value="pong">Pong balls</option><option value="arcade">Retro arcade gremlins</option><option value="missile">Missiles</option><option value="bug">Bugs</option><option value="skull">Skulls</option><option value="bolt">Lightning</option></select>
+ <button class="red" onclick="drill()">Breach Drill</button><button onclick="speak=!speak;feed('Narrator '+(speak?'on':'off'))">Narrator</button><button class="red" onclick="kill()">Kill Switch</button></div>
+ <div id="arenaWrap"><canvas id="c"></canvas></div><div id="feed" class="card"></div></section>
+
+<section id="desk"><h2>Front Desk · AI Receptionist</h2>
+ <div id="deskOff" class="card"></div>
+ <div id="deskOn" style="display:none">
+  <p class="mut" id="bizLine"></p>
+  <div class="grid">
+   <div class="card"><div class="mut">New inquiries</div><div class="big" id="kNew">0</div></div>
+   <div class="card"><div class="mut">Jobs booked</div><div class="big g" id="kBooked">0</div></div>
+   <div class="card"><div class="mut">Quotes sent</div><div class="big g" id="kQuotes">0</div></div>
+   <div class="card"><div class="mut">Waiting on you</div><div class="big y" id="kWait">0</div></div>
+   <div class="card"><div class="mut">Scams stopped</div><div class="big r" id="kScam">0</div></div>
+  </div>
+  <h3>Simulate a customer</h3>
+  <div class="row">
+   <button class="ghost" onclick="sample('call')">📞 AC repair call</button><button class="ghost" onclick="sample('text')">💬 Clogged drain text</button>
+   <button class="ghost" onclick="sample('quote')">💲 Water heater quote</button><button class="ghost" onclick="sample('discount')">🏷️ Discount request</button>
+   <button class="ghost" onclick="sample('emergency')">🚨 Burst pipe emergency</button><button class="red" onclick="sample('scam')">☠️ Scam text</button>
+  </div>
+  <div class="row" style="margin-top:10px">
+   <button class="grn" id="runBtn" onclick="runDesk()">▶ Run Front Desk</button>
+   <span class="mut">Brain:</span><select id="deskBrain"><option value="scripted">Scripted (keyless)</option><option value="ollama">Ollama (local, keyless)</option><option value="anthropic">Anthropic (API key)</option></select>
+   <button class="ghost" onclick="resetDesk()">Reset demo data</button><span id="runMsg" class="mut"></span>
+  </div>
+  <h3>Inbox</h3><div class="card tablewrap"><table><thead><tr><th>Received</th><th>From</th><th>Message</th><th>Status</th></tr></thead><tbody id="tInbox"></tbody></table></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin-top:14px">
+   <div><h3>Jobs</h3><div class="card tablewrap"><table><thead><tr><th>Customer</th><th>Service</th><th>When</th><th>Status</th></tr></thead><tbody id="tJobs"></tbody></table></div></div>
+   <div><h3>Quotes</h3><div class="card tablewrap"><table><thead><tr><th>Customer</th><th>Service</th><th>Total</th><th>Status</th></tr></thead><tbody id="tQuotes"></tbody></table></div></div>
+  </div>
+  <h3>Texts sent to customers</h3><div class="card tablewrap"><table><thead><tr><th>To</th><th>Message</th></tr></thead><tbody id="tOut"></tbody></table></div>
+  <h3>Last run (Ianitor's log)</h3><pre id="runLog">Not run yet.</pre>
+ </div>
+</section>
+
+<section id="approvals"><h2>Approval Queue</h2><p class="mut">Risky actions are frozen until you decide. No answer in 15 minutes means blocked.</p><div id="queue"></div></section>
+
+<section id="squad"><h2>The Squad</h2><div class="grid" id="squadGrid"></div></section>
+
+<section id="roi"><h2>ROI Dashboard</h2><div class="grid">
+ <div class="card"><div class="mut">Hours saved</div><div class="big g" id="hrs">0</div></div>
+ <div class="card"><div class="mut">Labor value saved</div><div class="big g" id="usd">$0</div></div>
+ <div class="card"><div class="mut">Customer inquiries answered</div><div class="big g" id="ans">0</div></div>
+ <div class="card"><div class="mut">Attacks blocked</div><div class="big r" id="blk">0</div></div>
+ <div class="card"><div class="mut">Approvals handled</div><div class="big y" id="apr">0</div></div>
+ <div class="card"><div class="mut">Estimated breach cost avoided</div><div class="big g" id="avoid">$0</div></div>
+</div><p class="mut">Assumptions: 6 minutes saved per allowed action at $45/hour; $4,500 average cost per blocked incident. Edit in Settings.</p></section>
+
+<section id="packs"><h2>Niche Packs</h2><p class="mut">LIVE packs run real agents through Praetor. PREVIEW packs are on the roadmap.</p><div class="grid" id="packGrid"></div></section>
+
+<section id="settings"><h2>Settings</h2><div class="grid">
+ <div class="card"><b>Arx Mode</b><p class="mut">Fully local. Nothing leaves your firewall.</p><label><input type="checkbox" id="arx" checked> Air-gapped</label></div>
+ <div class="card"><b>Praetor address</b><p class="mut">On-premises gateway.</p><input id="api" value="http://127.0.0.1:8700" style="width:100%"></div>
+ <div class="card"><b>Front desk address</b><p class="mut">AI Receptionist service.</p><input id="deskApi" value="http://127.0.0.1:8720" style="width:100%"></div>
+ <div class="card"><b>ROI assumptions</b><p class="mut">Minutes per action / hourly rate</p><input id="mpa" value="6" size="3"> <input id="rate" value="45" size="4"></div>
+</div></section>
+
+<section id="plans"><h2>Plans &amp; Billing</h2><div class="grid" id="planGrid"></div>
+<p class="mut">Payments connect to your Stripe account in production. Prices are drafts.</p></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const AG=[["Mens","Mind","The Brain"],["Custos","Guardian","Security"],["Quaestor","Treasurer","Finance"],["Mercator","Merchant","Sales"],["Faber","Builder","Operations"],["Explorator","Explorer","Research"],["Artifex","Craftsman","Code"],["Vigil","Watchman","Watches all agents"]];
+const PACKS=[["ai_receptionist","AI Receptionist","Local trades · answers calls & texts, books jobs, sends quotes",true],["mech","Mobile Mechanic CRM","Auto service"],["contractor","Contractor CRM","Construction"],["medspa","Med Spa CRM","Health & beauty"],["logistics","Logistics & Shipping","Transportation"],["saas","SaaS Spend Tracker","Any business"],["compliance","Compliance-as-a-Service","Regulated orgs"],["robotics","Robotics Lab","Engineering"]];
+const PLANS=[["Trial",0,"14 days · 1 pack · 1 agent · Theatrum demo",1,1],["Starter",199,"1 pack · 5 agents · Theatrum · approvals",1,5],["Pro",799,"3 packs · 25 agents · full squad · ROI · compliance",3,25],["Enterprise",0,"Unlimited · Arx air-gapped · custom packs · support",99,999]];
+const PLAIN={quote_job:'send a price quote',apply_discount:'give a discount',dispatch_emergency:'dispatch an after-hours emergency tech',send_payment:'send a payment',send_email_external:'email someone outside the company',deploy_code:'deploy code',delete_records:'delete records'};
+const ls=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(_){return d}},lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}};
+let plan=ls('plan',{name:'Trial',packs:1,agents:1}),preview=ls('packs',[]);
+let S={blk:0,frz:0,alw:0,apr:0},live=false,since=0,speak=false,demoQ=[],livePacks={},killed=false,desk=null,pendingMap={};
+document.querySelectorAll('nav a').forEach(a=>a.onclick=()=>{document.querySelectorAll('nav a,section').forEach(e=>e.classList.remove('on'));a.classList.add('on');$(a.dataset.s).classList.add('on')});
+const API=()=>$('api').value.replace(/\/$/,''),DESK=()=>$('deskApi').value.replace(/\/$/,'');
+async function j(url,opt){const r=await fetch(url,opt);const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.detail||('HTTP '+r.status));return b}
+function feed(t,c){$('feed').insertAdjacentHTML('afterbegin','<div class="'+(c||'')+'">['+new Date().toLocaleTimeString()+'] '+esc(t)+'</div>');if(speak&&c==='r'&&window.speechSynthesis){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t))}}
+const recOn=()=>!!livePacks.ai_receptionist;
+function packCount(){return preview.length+(recOn()?1:0)}
+function renderPlan(){$('planName').textContent=plan.name;const pl=(n,w)=>n+' '+w+(n===1?'':'s');$('planInfo').textContent=pl(plan.agents,'agent')+' · '+pl(plan.packs,'pack');
+ $('planGrid').innerHTML=PLANS.map(p=>'<div class="card"><b>'+p[0]+'</b><div class="big">'+(p[0]==='Enterprise'?'Custom':'$'+p[1]+'<span class="mut">/mo</span>')+'</div><p class="mut">'+p[2]+'</p><button '+(plan.name===p[0]?'disabled':'')+' onclick="choose(\''+p[0]+'\','+p[3]+','+p[4]+')">'+(plan.name===p[0]?'Current plan':p[0]==='Enterprise'?'Contact sales':'Choose')+'</button></div>').join('');
+ const squad=[...AG];if(recOn())squad.push(["Ianitor","Doorkeeper","AI Receptionist · front desk"]);
+ $('squadGrid').innerHTML=squad.map((a,i)=>{const on=a[0]==='Ianitor'||a[0]==='Vigil'||i<Math.max(plan.agents,1);return '<div class="card"><b>'+a[0]+'</b> <span class="badge">'+a[1]+'</span><p class="mut">'+a[2]+'</p>'+(on?'<span class="g">● Active</span>':'<span class="mut">🔒 Upgrade to unlock</span>')+'</div>'}).join('');
+ $('packGrid').innerHTML=PACKS.map(p=>{const isLive=!!p[3],on=isLive?recOn():preview.includes(p[0]),can=on||packCount()<plan.packs,
+  dis=(isLive&&!live)?'disabled title="Start the sandbox to install live packs"':(can?'':'disabled');
+  return '<div class="card"><b>'+p[1]+'</b> <span class="badge '+(isLive?'g':'')+'">'+(isLive?'LIVE':'PREVIEW')+'</span><p class="mut">'+p[2]+'</p>'+
+  (on?'<button class="grn" onclick="pack(\''+p[0]+'\')">Installed ✓ (remove)</button>':'<button '+dis+' onclick="pack(\''+p[0]+'\')">'+(can?'Install':'Upgrade to add')+'</button>')+'</div>'}).join('')}
+function choose(n,pk,ag){if(n==='Enterprise'){alert('Enterprise: contact Nova Digitus Designs');return}plan={name:n,packs:pk,agents:ag};lsSet('plan',plan);preview=preview.slice(0,Math.max(0,pk-(recOn()?1:0)));lsSet('packs',preview);renderPlan();feed('Plan changed to '+n,'g')}
+async function pack(id){if(id==='ai_receptionist'){try{await j(API()+'/packs/ai_receptionist/'+(recOn()?'uninstall':'install'),{method:'POST'});await refreshPacks();feed('AI Receptionist '+(recOn()?'installed':'removed'),'g')}catch(e){feed('Pack change failed: '+e.message,'r')}return}
+ preview=preview.includes(id)?preview.filter(x=>x!==id):[...preview,id];lsSet('packs',preview);renderPlan()}
+function roi(){const m=+$('mpa').value||6,r=+$('rate').value||45,h=S.alw*m/60;
+ $('hrs').textContent=h.toFixed(1);$('usd').textContent='$'+Math.round(h*r).toLocaleString();$('blk').textContent=S.blk;$('apr').textContent=S.apr;$('avoid').textContent='$'+(S.blk*4500).toLocaleString();
+ $('ans').textContent=desk?desk.inbox.filter(i=>i.status!=='new').length:0}
+function renderQ(list){$('pc').textContent=list.length;$('queue').innerHTML=list.length?list.map(i=>{const what=PLAIN[i.tool]||i.tool;const a=i.args||{};
+  const detail=(a.service?' · '+esc(a.service.replace(/_/g,' ')):'')+(a.discount_pct?' · '+esc(a.discount_pct)+'% off':'');
+  return '<div class="card" style="margin-bottom:10px"><b class="y">'+esc(i.agent)+'</b> wants to <b>'+esc(what)+'</b>'+(i.amount?' <b>($'+Number(i.amount).toLocaleString(undefined,{minimumFractionDigits:2})+')</b>':'')+detail+
+  '<p class="mut">Why it was frozen: '+esc(String(i.reason).replace(/\b[a-z]+(?:_[a-z]+)+\b/g,t=>PLAIN[t]?'"'+PLAIN[t]+'"':t.replace(/_/g,' ')))+'. If you approve, it goes ahead right away. If you deny or ignore it, it is cancelled.</p><button class="grn" onclick="dec(\''+esc(i.id)+'\',true)">Approve</button><button class="red" onclick="dec(\''+esc(i.id)+'\',false)">Deny</button></div>'}).join(''):'<p class="mut">No pending actions. Walls holding.</p>'}
+async function dec(id,ok){S.apr++;roi();if(live){try{await j(API()+'/decide/'+id+'?approve='+ok,{method:'POST'});await deskSync()}catch(e){feed('Decision failed: '+e.message,'r')}}else{demoQ=demoQ.filter(i=>i.id!==id);renderQ(demoQ)}feed('Human '+(ok?'APPROVED ':'DENIED ')+id,ok?'g':'r')}
+async function kill(){if(live)await j(API()+'/killswitch',{method:'POST'}).catch(()=>{});else feed('KILL SWITCH (demo): all agents frozen','r')}
+async function rearm(){await j(API()+'/killswitch/rearm',{method:'POST'}).catch(()=>{});await refreshPacks()}
+function handle(e){const t=e.type;
+ if(t==='block'){S.blk++;launch('block');feed('BLOCKED: '+(e.agent||'')+' '+(e.tool||'')+' · '+e.reason,'r')}
+ else if(t==='freeze'){S.frz++;launch('freeze');feed('FROZEN: '+e.agent+' '+e.tool+' · '+e.reason,'y')}
+ else if(t==='allow'){S.alw++;launch('allow')}
+ else if(t==='approved'||t==='denied')feed('Human '+t.toUpperCase()+' '+(e.tool||'')+' '+e.pending_id,t==='approved'?'g':'r');
+ else if(t==='killswitch')feed('KILL SWITCH engaged: all agents frozen','r');
+ else if(t==='rearmed')feed('Sandbox re-armed by human','g');
+ else if(t==='pack_installed'||t==='pack_removed')feed('Niche pack '+(t==='pack_installed'?'installed: ':'removed: ')+e.pack,'g');
+ roi()}
+async function refreshPacks(){try{const [p,st]=await Promise.all([j(API()+'/packs'),j(API()+'/status')]);livePacks={};p.forEach(x=>{if(x.installed)livePacks[x.id]=true});
+ killed=st.killed;$('killbar').style.display=killed?'block':'none';renderPlan();renderDesk()}catch(_){}}
+async function poll(){try{const ev=await j(API()+'/events?since='+since);
+ if(!live){live=true;$('status').textContent='LIVE · Praetor connected';$('status').className='badge g';refreshPacks()}
+ ev.forEach(e=>{since=Math.max(since,e.ts);handle(e)});
+ const p=await j(API()+'/pending');pendingMap=p;renderQ(Object.entries(p).map(([id,v])=>({id,...v.action,reason:v.reason})))}
+ catch(_){if(live){live=false;renderPlan();renderDesk()}$('status').textContent='DEMO MODE · start the sandbox for live data';$('status').className='badge y';demo()}}
+const ATK=['prompt injection','data exfiltration','privilege escalation','runaway loop','credential theft'];
+function demo(){const a=AG[Math.random()*8|0][0],r=Math.random();
+ if(r<.22)handle({type:'block',agent:a,reason:ATK[Math.random()*5|0]});
+ else if(r<.28){handle({type:'freeze',agent:'Quaestor',tool:'send_payment',reason:'over $500 limit'});demoQ.push({id:'d'+Date.now(),agent:'Quaestor',tool:'send_payment',amount:2500,reason:'over $500 limit'});renderQ(demoQ)}
+ else handle({type:'allow',agent:a})}
+function drill(){ATK.forEach((t,i)=>setTimeout(()=>handle({type:'block',agent:'DRILL',reason:t}),i*150))}
+// ---------- front desk ----------
+const chip=s=>'<span class="chip c-'+esc(s)+'">'+esc(String(s).replace(/_/g,' '))+'</span>';
+const when=iso=>{if(!iso||iso==='ASAP')return 'ASAP';const d=new Date(iso);return isNaN(d)?esc(iso):d.toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})};
+const tip=(id,cols,msg)=>{$(id).innerHTML=msg?'<tr><td colspan="'+cols+'" class="mut">'+msg+'</td></tr>':''};
+function renderDesk(){
+ if(!live){$('deskOff').style.display='block';$('deskOn').style.display='none';$('deskOff').innerHTML='<b>The sandbox isn\'t running.</b><p class="mut">Run <code>start.ps1</code> in the praetor folder, then this page connects automatically.</p>';$('dc').textContent='0';return}
+ if(!recOn()){$('deskOff').style.display='block';$('deskOn').style.display='none';$('deskOff').innerHTML='<b>Install the AI Receptionist pack to open the Front Desk.</b><p class="mut">Ianitor answers calls and texts, books jobs into open slots, sends quotes, and escalates emergencies, all behind Praetor\'s walls.</p><button class="grn" onclick="pack(\'ai_receptionist\')">Install AI Receptionist</button>';$('dc').textContent='0';return}
+ $('deskOff').style.display='none';$('deskOn').style.display='block';
+ if(!desk){$('runMsg').textContent='Connecting to front desk...';return}
+ const d=desk;$('bizLine').textContent=d.business.name+' · '+d.business.hours+' · next open slot: '+(d.open_slots[0]?when(d.open_slots[0]):'none');
+ const newN=d.inbox.filter(i=>i.status==='new').length;$('dc').textContent=newN;$('kNew').textContent=newN;
+ $('kBooked').textContent=d.bookings.filter(b=>b.status==='booked'||b.status==='dispatched').length;
+ $('kQuotes').textContent=d.quotes.filter(q=>q.status==='sent').length;
+ $('kWait').textContent=d.quotes.filter(q=>q.status==='awaiting_approval').length+d.bookings.filter(b=>b.status==='awaiting_approval').length;
+ $('kScam').textContent=d.inbox.filter(i=>i.status==='flagged').length;
+ const inbox=[...d.inbox].reverse();
+ inbox.length?$('tInbox').innerHTML=inbox.map(i=>'<tr><td>'+when(i.received)+'</td><td>'+(i.channel==='call'?'📞 ':'💬 ')+esc(i.from_name)+'<br><span class="mut">'+esc(i.phone)+'</span></td><td>'+esc(i.message)+'</td><td>'+chip(i.status)+'</td></tr>').join(''):tip('tInbox',4,'No calls or texts yet. Simulate a customer above.');
+ d.bookings.length?$('tJobs').innerHTML=[...d.bookings].reverse().map(b=>'<tr><td>'+esc(b.customer)+'</td><td>'+esc(b.service)+'</td><td>'+when(b.slot)+'</td><td>'+chip(b.status)+'</td></tr>').join(''):tip('tJobs',4,'No jobs yet.');
+ d.quotes.length?$('tQuotes').innerHTML=[...d.quotes].reverse().map(q=>'<tr><td>'+esc(q.customer)+'</td><td>'+esc(q.service)+(q.discount_pct?' <span class="mut">('+esc(q.discount_pct)+'% off)</span>':'')+'</td><td>$'+Number(q.total).toLocaleString(undefined,{minimumFractionDigits:2})+'</td><td>'+chip(q.status)+'</td></tr>').join(''):tip('tQuotes',4,'No quotes yet.');
+ d.outbox.length?$('tOut').innerHTML=[...d.outbox].reverse().map(m=>'<tr><td style="white-space:nowrap">'+esc(m.to)+'</td><td>'+esc(m.body)+'</td></tr>').join(''):tip('tOut',2,'No texts sent yet.');
+ if(d.last_run&&d.last_run.output)$('runLog').textContent=d.last_run.output;roi()}
+async function deskRefresh(){if(!live||!recOn())return;try{desk=await j(DESK()+'/state');if($('runMsg').textContent==='Connecting to front desk...')$('runMsg').textContent='';renderDesk()}catch(_){desk=null;$('runMsg').textContent='Front desk service not reachable at '+DESK()}}
+async function deskSync(){if(!live||!recOn())return;try{await j(DESK()+'/sync',{method:'POST'});await deskRefresh()}catch(_){}}
+async function sample(k){try{await j(DESK()+'/inbound/sample/'+k,{method:'POST'});await deskRefresh()}catch(e){feed('Front desk: '+e.message,'r')}}
+async function runDesk(){const b=$('runBtn');b.disabled=true;$('runMsg').textContent='Ianitor is working the inbox...';
+ try{const r=await j(DESK()+'/run?brain='+$('deskBrain').value,{method:'POST'});desk=r.state;$('runLog').textContent=r.output||'(no output)';$('runMsg').textContent='Done. Anything frozen is waiting in Approvals.';renderDesk()}
+ catch(e){$('runMsg').textContent='Run failed: '+e.message}finally{b.disabled=false}}
+async function resetDesk(){if(!confirm('Clear all demo inbox, jobs, quotes and texts?'))return;try{await j(DESK()+'/reset',{method:'POST'});$('runLog').textContent='Not run yet.';await deskRefresh()}catch(e){feed('Reset failed: '+e.message,'r')}}
+// ---------- arena ----------
+const c=$('c'),x=c.getContext('2d');let B=[],P=[],heat=[0,0,0,0];
+function fit(){c.width=c.clientWidth;c.height=c.clientHeight}fit();onresize=fit;
+const EM={missile:'🚀',bug:'🐞',skull:'💀',bolt:'⚡'};
+function launch(k){if(B.length>160)return;const a=Math.random()*6.28,s=k==='block'?4.5:2;B.push({x:c.width/2,y:c.height/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s,k,l:k==='block'?240:60,ph:0})}
+function grem(px,py,col,ph){const p=3,m=['1000001','0111110','1101011','1111111','1111111',Math.sin(ph)>0?'1010101':'0101010'];x.fillStyle=col;
+ m.forEach((row,r)=>[...row].forEach((v,i)=>{if(v==='1')x.fillRect(px+(i-3.5)*p,py+(r-3)*p,p,p)}));x.fillStyle='#000';x.fillRect(px-4.5,py-3,3,3);x.fillRect(px+1.5,py-3,3,3)}
+function frame(){requestAnimationFrame(frame);if(!c.width)fit();const W=c.width,H=c.height,L=W*.08,R=W*.92,T=H*.1,Bo=H*.9,m=$('sym').value,arc=m==='arcade';
+ x.fillStyle='rgba(3,6,12,.35)';x.fillRect(0,0,W,H);
+ [[L,T,R,T],[R,T,R,Bo],[L,Bo,R,Bo],[L,T,L,Bo]].forEach((w,i)=>{const h=Math.min(heat[i]*5,255);x.strokeStyle=killed?'#c8323f':arc?'rgb(40,'+(90+h/3)+',255)':'rgb('+h+','+(255-h/2)+',255)';x.lineWidth=6;x.shadowBlur=22;x.shadowColor=x.strokeStyle;x.beginPath();x.moveTo(w[0],w[1]);x.lineTo(w[2],w[3]);x.stroke()});
+ x.shadowBlur=0;x.strokeStyle=arc?'#22f':'#1a5';x.lineWidth=1;x.strokeRect(L+28,T+28,R-L-56,Bo-T-56);
+ x.font='12px Segoe UI';x.fillStyle='#4ff';x.fillText(killed?'PRAETOR · KILL SWITCH ENGAGED':'PRAETOR · OUTER WALL',L+6,T-8);x.fillStyle='#3a8';x.fillText('MCP INNER WALL',L+34,T+44);
+ const names=AG.map(a=>a[0]);if(recOn())names.push('Ianitor');
+ names.forEach((n,i)=>{const an=i/names.length*6.28+Date.now()/9000,nx=W/2+Math.cos(an)*(R-L)*.3,ny=H/2+Math.sin(an)*(Bo-T)*.3;x.fillStyle=n==='Ianitor'?'#fd3':'#0ff';x.beginPath();x.arc(nx,ny,5,0,7);x.fill();x.fillStyle='#cfe';x.fillText(n,nx+8,ny+4)});
+ B=B.filter(b=>{b.x+=b.vx;b.y+=b.vy;b.ph+=.25;const col=b.k==='block'?'#f45':b.k==='freeze'?'#fd3':'#3f8';
+  if(b.k==='block'){const sp=()=>{for(let i=0;i<18;i++)P.push({x:b.x,y:b.y,vx:(Math.random()-.5)*7,vy:(Math.random()-.5)*7,l:28})};
+   if(b.x<L){b.x=L;b.vx*=-1;heat[3]++;sp()}if(b.x>R){b.x=R;b.vx*=-1;heat[1]++;sp()}if(b.y<T){b.y=T;b.vy*=-1;heat[0]++;sp()}if(b.y>Bo){b.y=Bo;b.vy*=-1;heat[2]++;sp()}}
+  x.shadowBlur=14;x.shadowColor=col;
+  if(b.k!=='block'||m==='pong'){x.fillStyle=col;x.beginPath();x.arc(b.x,b.y,b.k==='block'?7:4,0,7);x.fill()}
+  else if(arc)grem(b.x,b.y,col,b.ph);else{x.font='22px serif';x.textAlign='center';x.fillText(EM[m],b.x,b.y+7);x.textAlign='left'}
+  x.shadowBlur=0;return --b.l>0});
+ P=P.filter(p=>{p.x+=p.vx;p.y+=p.vy;x.fillStyle='rgba(255,90,90,'+p.l/28+')';x.fillRect(p.x,p.y,3,3);return --p.l>0})}
+renderPlan();renderQ([]);roi();renderDesk();frame();
+setInterval(poll,900);setInterval(()=>{if(live)refreshPacks()},4000);setInterval(deskSync,2500);
+feed('Console online. Walls holding.','g');
+</script></body></html>
