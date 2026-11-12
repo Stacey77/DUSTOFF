@@ -1,0 +1,13 @@
+name: 5V to 3.3V rail, 3A
+vin: 5.0
+vout: 3.3
+vout_tolerance: 0.03     # +/- fraction
+ripple_max: 0.033        # V peak to peak
+iout: 3.0
+t_ambient: 40            # C, inside the sealed enclosure
+max_rise: 40             # C, max temperature rise above ambient
+derating: 0.9            # use parts at no more than 90% of rated current
+board:
+  width_mm: 50
+  height_mm: 50
+  copper_pour: false
