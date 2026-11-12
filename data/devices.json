@@ -1,0 +1,35 @@
+[
+  {
+    "id": "f9d672fc",
+    "name": "internet-gateway",
+    "host": "8.8.8.8",
+    "check": "ping",
+    "port": null,
+    "dns_query": null,
+    "tags": [
+      "wan"
+    ]
+  },
+  {
+    "id": "7e4e4ff5",
+    "name": "dns-google",
+    "host": "8.8.8.8",
+    "check": "dns",
+    "port": null,
+    "dns_query": "google.com",
+    "tags": [
+      "dns"
+    ]
+  },
+  {
+    "id": "8453fec0",
+    "name": "github-https",
+    "host": "github.com",
+    "check": "tcp_port",
+    "port": 443,
+    "dns_query": null,
+    "tags": [
+      "saas"
+    ]
+  }
+]

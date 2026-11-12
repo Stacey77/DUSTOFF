@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Network Repair Bot</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #2f81f7;
+    --ok: #3fb950; --warn: #d29922; --crit: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif;
+         background: var(--bg); color: var(--text); }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border);
+           display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 22px; margin: 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px; }
+  .panel { background: var(--panel); border: 1px solid var(--border);
+           border-radius: 10px; padding: 16px; }
+  .panel h2 { margin: 0 0 12px; font-size: 12px; color: var(--muted);
+              text-transform: uppercase; letter-spacing: .06em; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: left; }
+  .healthy { color: var(--ok); } .degraded { color: var(--warn); }
+  .down { color: var(--crit); } .unknown { color: var(--muted); }
+  #chatlog { height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .msg { padding: 8px 12px; border-radius: 8px; max-width: 85%; font-size: 14px; line-height: 1.4; }
+  .msg.user { align-self: flex-end; background: var(--accent); color: #fff; }
+  .msg.bot { align-self: flex-start; background: #21262d; }
+  #composer { display: flex; gap: 8px; margin-top: 12px; }
+  #composer input { flex: 1; padding: 10px 12px; border-radius: 8px;
+                    border: 1px solid var(--border); background: #0d1117; color: var(--text); }
+  button { padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border);
+           background: #21262d; color: var(--text); cursor: pointer; font-size: 14px; }
+  button:hover { border-color: var(--accent); }
+  #mic.listening { background: var(--crit); border-color: var(--crit); color: #fff; }
+  .incident { color: var(--crit); font-size: 13px; padding: 4px 0; }
+  .actions button { margin: 2px 4px 2px 0; padding: 4px 10px; font-size: 12px; }
+  #apikey { margin-left: auto; width: 220px; padding: 6px 10px; border-radius: 8px;
+            border: 1px solid var(--border); background: #0d1117; color: var(--text); font-size: 13px; }
+  #authmsg { color: var(--warn); font-size: 13px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛠️ AI Network Repair Bot</h1>
+  <span id="summary" style="color:var(--muted);font-size:14px"></span>
+  <span id="authmsg"></span>
+  <input id="apikey" type="password" placeholder="API key (if auth is enabled)" autocomplete="off" />
+</header>
+<main>
+  <section class="panel">
+    <h2>Devices</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Host</th><th>Check</th><th>Status</th><th>Latency</th><th></th></tr></thead>
+      <tbody id="devices"></tbody>
+    </table>
+    <h2 style="margin-top:20px">Open incidents</h2>
+    <div id="incidents"><span style="color:var(--muted)">None</span></div>
+    <h2 style="margin-top:20px">Agent swarm</h2>
+    <div id="agents" style="font-size:13px"></div>
+    <h2 style="margin-top:12px">Recent agent tasks</h2>
+    <div id="tasks" style="font-size:13px;max-height:160px;overflow-y:auto"></div>
+  </section>
+  <section class="panel">
+    <h2>Assistant</h2>
+    <div id="chatlog"></div>
+    <div id="composer">
+      <input id="input" placeholder='Try "status", "check dns-google", "fix github-https", "help"…' autofocus />
+      <button id="mic" title="Voice input">🎤</button>
+      <button id="send">Send</button>
+    </div>
+    <p style="color:var(--muted);font-size:12px">
+      Voice uses your browser's speech recognition (Chrome/Edge). Replies are spoken aloud when voice is on.
+    </p>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let voiceOn = false;
+
+// API key is kept in localStorage and sent as X-API-Key on every request.
+function apiKey() { return localStorage.getItem("nrb_api_key") || ""; }
+
+async function api(path, opts = {}) {
+  const headers = {...(opts.headers || {})};
+  const key = apiKey();
+  if (key) headers["X-API-Key"] = key;
+  const res = await fetch(path, {...opts, headers});
+  if (res.status === 401 || res.status === 403) {
+    $("authmsg").textContent = res.status === 401
+      ? "API key required — enter it above" : "This key lacks admin rights for that action";
+  } else {
+    $("authmsg").textContent = "";
+  }
+  return res;
+}
+
+$("apikey").value = apiKey();
+$("apikey").addEventListener("change", e => {
+  localStorage.setItem("nrb_api_key", e.target.value.trim());
+  refresh();
+});
+
+function speak(text) {
+  if (!voiceOn || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text);
+  window.speechSynthesis.speak(u);
+}
+
+function addMsg(text, who) {
+  const div = document.createElement("div");
+  div.className = "msg " + who;
+  div.textContent = text;
+  $("chatlog").appendChild(div);
+  $("chatlog").scrollTop = $("chatlog").scrollHeight;
+}
+
+async function send(text) {
+  text = (text ?? $("input").value).trim();
+  if (!text) return;
+  addMsg(text, "user");
+  $("input").value = "";
+  const res = await api("/api/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({message: text}),
+  });
+  const data = res.ok ? await res.json() : {reply: $("authmsg").textContent || `Request failed (${res.status})`};
+  addMsg(data.reply, "bot");
+  speak(data.reply);
+  refresh();
+}
+
+async function getJson(path) {
+  const res = await api(path);
+  return res.ok ? res.json() : null;
+}
+
+async function refresh() {
+  const [devices, status, incidents, agents, tasks] = await Promise.all([
+    getJson("/api/devices"),
+    getJson("/api/status"),
+    getJson("/api/incidents"),
+    getJson("/api/agents"),
+    getJson("/api/agents/tasks"),
+  ]);
+  if (!devices || !status || !incidents || !agents || !tasks) {
+    $("summary").textContent = "Not connected to data — check the API key";
+    return;
+  }
+  $("summary").textContent =
+    `${status.devices} devices · ${status.by_status.down} down · ${status.open_incidents} incident(s)`;
+  $("devices").innerHTML = devices.map(d => `
+    <tr>
+      <td>${d.name}</td><td>${d.host}${d.port ? ":" + d.port : ""}</td>
+      <td>${d.check}</td>
+      <td class="${d.status}">${d.status}</td>
+      <td>${d.last && d.last.latency_ms != null ? d.last.latency_ms + " ms" : "—"}</td>
+      <td class="actions">
+        <button onclick="send('check ${d.name}')">Check</button>
+        <button onclick="send('fix ${d.name}')">Fix</button>
+      </td>
+    </tr>`).join("");
+  $("incidents").innerHTML = incidents.length
+    ? incidents.map(i => `<div class="incident">⚠ ${i.device_name}: ${i.message}</div>`).join("")
+    : '<span style="color:var(--muted)">None</span>';
+  $("agents").innerHTML = agents.map(a =>
+    `<div>🤖 <b>${a.name}</b> <span style="color:var(--muted)">— ${a.capabilities.join(", ")}</span></div>`
+  ).join("");
+  const recent = tasks.slice(-8).reverse();
+  $("tasks").innerHTML = recent.length
+    ? recent.map(t => `<div>${t.status === "done" ? "✅" : t.status === "failed" ? "❌" : "⏳"} <b>${t.assigned_to || t.kind}</b>: ${(t.result || t.description).slice(0, 90)}</div>`).join("")
+    : '<span style="color:var(--muted)">No tasks yet — give the brain a goal, e.g. "design an enterprise network"</span>';
+}
+
+$("send").onclick = () => send();
+$("input").addEventListener("keydown", e => { if (e.key === "Enter") send(); });
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+$("mic").onclick = () => {
+  if (!SR) { addMsg("Voice input isn't supported in this browser.", "bot"); return; }
+  const rec = new SR();
+  rec.lang = "en-US";
+  $("mic").classList.add("listening");
+  rec.onresult = (e) => send(e.results[0][0].transcript);
+  rec.onend = () => $("mic").classList.remove("listening");
+  rec.onerror = () => $("mic").classList.remove("listening");
+  voiceOn = true;
+  rec.start();
+};
+
+addMsg("Hi! I monitor your network and can fix common problems. Say 'help' to get started.", "bot");
+refresh();
+setInterval(refresh, 10000);
+</script>
+</body>
+</html>
