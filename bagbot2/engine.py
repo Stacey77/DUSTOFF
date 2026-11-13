@@ -53,6 +53,8 @@ class PaperEngine:
         self.equity_history: list[dict] = []
         self.errors: list[dict] = []
         self.events: list[dict] = []
+        self.started = time.time()
+        self.cycles = 0
         self.dd_alerted = False
         self.last_perf_trigger = 0.0
         self.last_cycle: str | None = None
@@ -259,6 +261,7 @@ class PaperEngine:
 
         with self.lock:
             self.last_cycle = _now()
+            self.cycles += 1
             self._mark()
             if self._performance_degraded() and time.time() - self.last_perf_trigger > PERF_TRIGGER_COOLDOWN_S:
                 self.last_perf_trigger = time.time()
@@ -282,6 +285,25 @@ class PaperEngine:
         log.info("engine %s", "paused" if value else "resumed")
 
     # ---------- observability ----------
+
+    def _volatility(self) -> float:
+        """Annualised volatility of equity-curve returns."""
+        from math import sqrt
+        import statistics
+        eq = [h["equity"] for h in self.equity_history]
+        rets = [(b - a) / a for a, b in zip(eq, eq[1:]) if a > 0]
+        if len(rets) < 3:
+            return 0.0
+        periods_per_year = 252 * 6.5 * 3600 / max(1, self.s.interval_seconds)
+        return round(statistics.pstdev(rets) * sqrt(periods_per_year), 4)
+
+    def _profit_factor(self) -> float:
+        pnls = [t["pnl"] for t in self.trades if t["side"] == "SELL" and "pnl" in t]
+        gains = sum(x for x in pnls if x > 0)
+        losses = -sum(x for x in pnls if x < 0)
+        if losses == 0:
+            return 99.0 if gains > 0 else 0.0
+        return round(min(gains / losses, 99.0), 3)
 
     def _event(self, kind: str, text: str) -> None:
         self.events.append({"t": _now(), "kind": kind, "text": text})
@@ -332,4 +354,9 @@ class PaperEngine:
                 "sharpe": self._risk_stats()[0],
                 "max_drawdown": self._risk_stats()[1],
                 "events": self.events[-60:][::-1],
+                "volatility": self._volatility(),
+                "profit_factor": self._profit_factor(),
+                "cycles": self.cycles,
+                "uptime_s": int(time.time() - self.started),
+                "symbols": list(self.s.symbols),
             }
