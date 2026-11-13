@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Civitas Sapientia — 3D City Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#d6b46a;--jade:#4fbf9a;--ink:#ecebe4;--mute:#9aa59f;--glass:rgba(8,14,20,.72);--edge:rgba(255,255,255,.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#05090e;color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+.glass{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--edge);border-radius:14px}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.loading{position:fixed;inset:0;display:grid;place-items:center;z-index:50;background:#05090e;transition:opacity .6s}
+.loading div{text-align:center}.loading h1{font:700 44px "Cormorant Garamond",serif;color:var(--gold)}.loading p{font:12px "JetBrains Mono",monospace;color:var(--mute);letter-spacing:.15em}
+#stage.ready ~ .loading{opacity:0;pointer-events:none}
+/* top bar */
+#top{position:fixed;top:12px;left:12px;right:12px;display:flex;align-items:center;gap:10px;z-index:10;pointer-events:none}
+#top>*{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 14px}
+.brand b{font:700 21px "Cormorant Garamond",serif;color:var(--gold);white-space:nowrap}
+.brand span{font:10px "JetBrains Mono",monospace;color:var(--mute);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.seg{display:flex;padding:4px;gap:2px}
+.seg button{padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:500;color:#c9d2cd;white-space:nowrap}
+.seg button:hover{background:rgba(255,255,255,.06)}
+.seg button.on{background:var(--gold);color:#120f06}
+#tod button.on{background:#9fd0ff;color:#06101a}
+.spacer{flex:1}
+#navToggle{padding:9px 12px;display:none}
+#layersBtn{padding:9px 13px;font-size:12.5px}
+#layers{position:fixed;top:66px;right:12px;padding:12px 14px;z-index:12;display:none;min-width:200px}
+#layers.on{display:block}
+#layers label{display:flex;gap:9px;align-items:center;padding:5px 0;font-size:13px;cursor:pointer}
+#layers input{accent-color:var(--gold)}
+/* nav */
+#nav{position:fixed;top:70px;left:12px;bottom:170px;width:280px;z-index:9;display:flex;flex-direction:column;overflow:hidden}
+#search{margin:12px;padding:9px 12px;border-radius:10px;border:1px solid var(--edge);background:rgba(255,255,255,.04);color:var(--ink);font:inherit;outline:none}
+#search:focus{border-color:var(--gold)}
+#navList{overflow-y:auto;padding:0 8px 12px}
+#navList h4{font:500 10.5px "JetBrains Mono",monospace;color:var(--jade);letter-spacing:.12em;text-transform:uppercase;margin:12px 6px 4px}
+.item{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:7px 8px;border-radius:9px}
+.item:hover{background:rgba(255,255,255,.06)}
+.item i{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none;box-shadow:0 0 8px currentColor}
+.item i.sq{border-radius:2px;background:var(--gold)}
+.item span{font-size:13.5px;font-weight:500}.item small{display:block;font-size:11.5px;color:var(--mute);font-weight:400}
+.empty{color:var(--mute);padding:12px}
+/* info */
+#info{position:fixed;top:70px;right:12px;width:340px;max-height:calc(100vh - 250px);overflow-y:auto;padding:18px 18px 16px;z-index:9;transform:translateX(380px);opacity:0;transition:.35s}
+body.infoOpen #info{transform:none;opacity:1}
+#infoClose{position:fixed;top:78px;right:22px;z-index:10;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.08);display:none}
+body.infoOpen #infoClose{display:block}
+#info .k{font:500 10.5px "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);padding-right:30px}
+#info h2{font:700 30px/1.08 "Cormorant Garamond",serif;margin:6px 0}
+#info .sub{color:var(--jade);font-size:13px;margin-bottom:8px}
+#info p{font-size:13.5px;color:#c9d2cd}
+#info h5{font:500 10.5px "JetBrains Mono",monospace;color:var(--mute);letter-spacing:.12em;text-transform:uppercase;margin:16px 0 6px}
+#info ul{padding-left:18px;font-size:13px;color:#c9d2cd}#info li{margin:3px 0}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
+.kpis div{background:rgba(255,255,255,.04);border:1px solid var(--edge);border-radius:10px;padding:8px 10px}
+.kpis b{display:block;font:700 20px "Cormorant Garamond",serif;color:var(--gold)}.kpis span{font-size:11px;color:var(--mute)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{padding:5px 11px;border-radius:99px;border:1px solid var(--c,var(--gold));font-size:12px}
+.chips button:hover{background:var(--c);color:#06100c}
+.cta{margin-top:16px;width:100%;padding:10px;border-radius:10px;background:var(--gold);color:#120f06;font-weight:600}
+.muted{color:var(--mute)}
+/* labels */
+#labels{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;font:500 12px Inter;color:#fff;padding:5px 11px 5px 9px;border-radius:99px;background:rgba(7,13,20,.8);border:1px solid var(--c);box-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent);transition:opacity .3s;margin:-36px 0 0 -10px}
+.lbl i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:7px;box-shadow:0 0 8px var(--c)}
+.lbl:after{content:"";position:absolute;left:12px;top:100%;width:1px;height:22px;background:linear-gradient(var(--c),transparent)}
+.lbl.name{font:600 11px "JetBrains Mono",monospace;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;background:rgba(7,13,20,.6);cursor:pointer;color:var(--c);margin:-12px 0 0 -40px}
+.lbl.name:after{display:none}
+/* bottom */
+#bottom{position:fixed;left:12px;right:12px;bottom:12px;display:flex;gap:10px;align-items:flex-end;z-index:9;pointer-events:none}
+#bottom>*{pointer-events:auto}
+#hud{display:grid;grid-template-columns:repeat(4,auto);gap:4px 18px;padding:10px 14px}
+#hud div{display:flex;flex-direction:column;min-width:96px}
+#hud span{font:10px "JetBrains Mono",monospace;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+#hud b{font:700 20px "Cormorant Garamond",serif;color:var(--jade);line-height:1.1}
+#hud em{font-style:normal;font-size:10.5px;color:var(--mute)}
+.hudt{grid-column:1/-1;font:500 10px "JetBrains Mono",monospace;color:var(--gold);letter-spacing:.12em}
+#help{flex:1;text-align:center;font:11.5px "JetBrains Mono",monospace;color:rgba(255,255,255,.55);padding-bottom:6px;align-self:center}
+#mmWrap{padding:8px}
+#mmWrap div{font:10px "JetBrains Mono",monospace;color:var(--mute);letter-spacing:.1em;margin:0 0 5px 2px}
+#minimap{width:220px;height:140px;border-radius:8px;cursor:crosshair;display:block}
+/* tour */
+#tourBar{position:fixed;left:50%;top:76px;transform:translateX(-50%);display:none;align-items:center;gap:10px;padding:8px 10px 8px 16px;z-index:11;min-width:360px}
+#tourBar.on{display:flex}
+#tourCap{flex:1;font-size:13.5px}#tourCap b{color:var(--gold);font-family:"JetBrains Mono",monospace;font-size:11px;margin-right:6px}
+#tourBar button{padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.07)}
+#tourBar .bar{position:absolute;left:10px;right:10px;bottom:3px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+#tourProg{height:100%;width:0;background:var(--gold)}
+/* walk pad */
+#pad{position:fixed;left:50%;bottom:170px;transform:translateX(-50%);display:none;grid-template-columns:repeat(3,48px);gap:6px;z-index:9}
+body[data-mode=walk] #pad,body[data-mode=fly] #pad{display:grid}
+#pad button{height:48px;border-radius:12px;font-size:18px}
+#pad .up{grid-column:2}#pad .dn{grid-column:2}
+body[data-mode=fly] #pad .fly{display:block}#pad .fly{display:none}
+#toast{position:fixed;left:50%;top:76px;transform:translate(-50%,-10px);opacity:0;transition:.3s;z-index:20;padding:8px 14px;font-size:13px;pointer-events:none}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+body[data-mode=tour] #nav{opacity:.0;pointer-events:none}
+#nav{transition:opacity .3s,transform .3s}
+@media(max-width:1100px){#hud{grid-template-columns:repeat(2,auto)}#help{display:none}}
+@media(max-width:800px){
+  #navToggle{display:block}.brand span{display:none}#nav{transform:translateX(-310px);bottom:12px;top:66px;width:min(300px,85vw)}body.navOpen #nav{transform:none}
+  #top{flex-wrap:wrap}#modes{order:3;width:100%;overflow-x:auto}#tod{order:4}.spacer{display:none}
+  #nav,#info{top:150px}#info{width:auto;left:12px;max-height:45vh}#infoClose{top:158px}
+  #hud{display:none}#mmWrap{display:none}#layers{top:150px}#tourBar{top:150px;min-width:0;width:calc(100% - 24px)}
+  .lbl.name{display:none}
+}
+</style>
+</head>
+<body class="infoOpen" data-mode="orbit">
+<div id="stage"></div>
+<div class="loading"><div><h1>Civitas Sapientia</h1><p>ASSEMBLING THE LIVING CITY…</p></div></div>
+<div id="labels"></div>
+
+<div id="top">
+  <button id="navToggle" class="glass" aria-label="Explore">☰</button>
+  <div class="brand glass"><b>Civitas Sapientia</b><span>3D City Explorer</span></div>
+  <div id="modes" class="seg glass">
+    <button data-m="orbit" class="on">◎ Orbit</button>
+    <button data-m="tour">▶ Tour</button>
+    <button data-m="fly">✈ Fly</button>
+    <button data-m="walk">🚶 Walk</button>
+    <button data-m="ride">🚄 Ride maglev</button>
+  </div>
+  <div class="spacer"></div>
+  <div id="tod" class="seg glass">
+    <button data-t="dawn">Dawn</button><button data-t="day">Day</button><button data-t="dusk">Dusk</button><button data-t="night" class="on">Night</button>
+  </div>
+  <button id="layersBtn" class="glass">Layers ▾</button>
+</div>
+<div id="layers" class="glass">
+  <label><input type="checkbox" data-l="flows">Ecosystem flows</label>
+  <label><input type="checkbox" data-l="labels">Point labels</label>
+  <label><input type="checkbox" data-l="names">District names</label>
+  <label><input type="checkbox" data-l="drones">Drones &amp; birds</label>
+  <label><input type="checkbox" data-l="rotate">Auto-rotate overview</label>
+</div>
+
+<aside id="nav" class="glass">
+  <input id="search" type="search" placeholder="Search districts, ecosystems, landmarks…" autocomplete="off">
+  <div id="navList"></div>
+</aside>
+
+<aside id="info" class="glass"></aside>
+<button id="infoClose" aria-label="Close">✕</button>
+
+<div id="tourBar" class="glass"><div id="tourCap"></div><button id="tourPrev">◀</button><button id="tourNext">▶</button><button id="tourStop">✕ Exit</button><div class="bar"><div id="tourProg"></div></div></div>
+
+<div id="pad">
+  <button class="glass fly" data-k="KeyE" style="grid-column:1">⤒</button>
+  <button class="glass up" data-k="KeyW">▲</button>
+  <button class="glass fly" data-k="KeyQ" style="grid-column:3">⤓</button>
+  <button class="glass" data-k="KeyA">◀</button>
+  <button class="glass dn" data-k="KeyS">▼</button>
+  <button class="glass" data-k="KeyD">▶</button>
+</div>
+
+<div id="bottom">
+  <div class="glass" style="padding:0"><div id="hud"></div></div>
+  <div id="help"></div>
+  <div id="mmWrap" class="glass"><div>MAP · CLICK TO JUMP</div><canvas id="minimap"></canvas></div>
+</div>
+<div id="toast" class="glass"></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+/*JS*/
+</script>
+</body>
+</html>
