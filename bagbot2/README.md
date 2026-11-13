@@ -109,3 +109,10 @@ Logs on the server: `journalctl -u bagbot2 -f` and `/opt/bagbot2/logs/bagbot2.lo
   paper results, across several market regimes, before any real capital is considered.
 - **Scale:** single process, single worker, state in one JSON file. Fine for a handful of symbols.
 - **Secrets:** keep `.env` on your machine only. Server secrets go in `/etc/bagbot2/bagbot2.env`, typed by hand.
+
+## Design notes (dashboard)
+
+- **No Deploy button.** In this build, deploying would change live parameters. Testing is covered by **Run Backtest**, which is read-only and changes no paper state.
+- **Engine core is a labeled grid, not an animated network.** It shows the real components (market data, indicators, strategy, tuner, risk limits, paper broker, alerts) and whether the engine is running.
+- **No Neuro Advisor chat and no AI trading text.** The dashboard does not generate trade advice or order instructions. Alerts cover trades, tuning decisions, drawdown breaches and errors.
+- **No chart-pattern alerts or confidence percentages.** Any future pattern signal would need a backtested rule and its historical hit rate shown next to it.
