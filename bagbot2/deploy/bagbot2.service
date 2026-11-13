@@ -1,0 +1,20 @@
+[Unit]
+Description=BAGBOT2 paper trading engine and dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=bagbot
+Group=bagbot
+WorkingDirectory=/opt/bagbot2
+EnvironmentFile=/etc/bagbot2/bagbot2.env
+ExecStart=/opt/bagbot2/venv/bin/python main.py
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/bagbot2/data /opt/bagbot2/logs
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

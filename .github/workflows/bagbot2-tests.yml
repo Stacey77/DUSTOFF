@@ -1,0 +1,23 @@
+name: BAGBOT2 tests
+
+on:
+  push:
+    branches: [ "bagbot2-paper-dashboard", "main" ]
+    paths: [ "bagbot2/**", ".github/workflows/bagbot2-tests.yml" ]
+  pull_request:
+    paths: [ "bagbot2/**" ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bagbot2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
