@@ -108,6 +108,15 @@ input{padding:9px;border-radius:9px;border:1px solid var(--line);background:#0f0
 .node .sub{margin-top:6px}
 pre.cfg{margin:0;font-size:12px;color:var(--muted);white-space:pre-wrap}
 .note{font-size:12px;color:var(--muted);border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.net{width:100%;height:auto;display:block}
+.link{stroke:#4c3fa0;stroke-width:1.5;stroke-dasharray:6 6}
+.link.live{animation:flow 1.6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-24}}
+.node{fill:#0f0c24;stroke:#8b5cf6;stroke-width:2}
+.hub{fill:#2a1f63;stroke:#38bdf8;stroke-width:2.5}
+.node.off,.hub.off{stroke:#6b7280}
+.lbl{fill:#eceaff;font-size:13px;font-weight:700;text-anchor:middle}
+.sub2{fill:#9a94c4;font-size:10px;text-anchor:middle}
 footer{display:flex;flex-wrap:wrap;gap:18px;padding:9px 18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;background:var(--side)}
 footer b{color:var(--text);font-weight:600}
 </style></head>
@@ -151,10 +160,12 @@ footer b{color:var(--text);font-weight:600}
     <div class="two">
       <div class="panel">
         <h2>Engine core</h2>
-        <div class="core" id="core"></div>
+        <div id="core"></div>
       </div>
       <div class="panel"><h2>Real-time alerts</h2><div class="feed" id="events-dash"></div></div>
     </div>
+    <div class="panel"><h2>Neuro Advisor · explanations</h2><div class="feed" id="advisor"></div>
+      <div class="note">Explains the paper engine's current state from its rules. It gives no trade advice and places no orders.</div></div>
     <div class="panel"><h2>Recent executions</h2><div class="scroll" id="trades-dash"></div></div>
   </section>
 
@@ -247,17 +258,42 @@ function fmtUptime(s) { const h = Math.floor(s / 3600), m = Math.floor((s % 3600
 
 function renderCore(s) {
   const running = !s.paused;
-  const parts = [
-    ["Market data", "yfinance bars · " + s.symbols.length + " symbols"],
-    ["Indicators", "RSI · SMA · EMA · MACD"],
-    ["Strategy", "pullback rules, per symbol"],
-    ["Walk-forward tuner", "out-of-sample gated"],
-    ["Risk limits", "stop · take · drawdown alert"],
-    ["Paper broker", "simulated fills only"],
-    ["Alerts", "log · webhook"],
-  ];
-  document.getElementById("core").innerHTML = parts.map(([name, desc]) =>
-    '<div class="node"><span class="dot' + (running ? "" : " off") + '"></span><b>' + esc(name) + '</b><div class="sub">' + esc(desc) + '</div></div>').join("");
+  const parts = [["Data", "bars"], ["Indicators", "RSI·MACD"], ["Strategy", "rules"], ["Tuner", "walk-fwd"],
+                 ["Risk", "stops"], ["Broker", "sim fills"], ["Alerts", "notify"]];
+  const cx = 300, cy = 150, r = 105, n = parts.length;
+  let lines = "", nodes = "";
+  parts.forEach(([name, desc], i) => {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / n;
+    const x = cx + r * Math.cos(a) * 1.5, y = cy + r * Math.sin(a);
+    lines += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="link' + (running ? " live" : "") + '"/>';
+    nodes += '<g><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="34" class="node' + (running ? "" : " off") + '"/>' +
+      '<text x="' + x.toFixed(1) + '" y="' + (y - 2).toFixed(1) + '" class="lbl">' + esc(name) + '</text>' +
+      '<text x="' + x.toFixed(1) + '" y="' + (y + 12).toFixed(1) + '" class="sub2">' + esc(desc) + '</text></g>';
+  });
+  document.getElementById("core").innerHTML =
+    '<svg viewBox="0 0 600 300" class="net">' + lines +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="42" class="hub' + (running ? "" : " off") + '"/>' +
+    '<text x="' + cx + '" y="' + (cy - 2) + '" class="lbl">Paper</text>' +
+    '<text x="' + cx + '" y="' + (cy + 12) + '" class="sub2">engine</text>' + nodes + '</svg>' +
+    '<div class="sub">' + (running ? "Running" : "Paused") + " · each label is a real component</div>";
+}
+function renderAdvisor(s) {
+  const lines = [];
+  s.symbols.forEach(sym => {
+    const p = s.params[sym], pos = s.open_positions[sym];
+    if (pos) {
+      lines.push(sym + ": holding " + Number(pos.qty).toFixed(2) + " since " + pos.entry_time +
+        ". Closes at stop " + Number(pos.stop).toFixed(2) + ", take " + Number(pos.take).toFixed(2) +
+        ", or when RSI reaches " + p.rsi_overbought + ".");
+    } else {
+      lines.push(sym + ": no position. Entry needs RSI at or below " + p.rsi_oversold +
+        ", a rising MACD histogram, and price within 5% of SMA(" + p.sma_window + ").");
+    }
+  });
+  const t = s.tune_log[0];
+  if (t) lines.push("Last tuning for " + t.symbol + ": " + (t.accepted ? "new parameters accepted" : "kept current parameters") + ". " + t.reason + ".");
+  lines.push("Drawdown is " + pct(s.drawdown) + " from peak. The alert threshold is " + pct(s.config.max_drawdown_alert) + ".");
+  document.getElementById("advisor").innerHTML = lines.map(l => '<div class="evt"><span class="k">note</span>' + esc(l) + '</div>').join("");
 }
 function renderFlows(s) {
   document.getElementById("flows").innerHTML = Object.entries(s.params).map(([sym, p]) => {
@@ -299,6 +335,7 @@ async function refresh() {
     document.getElementById("s-state").textContent = "saved · " + money(s.cash) + " cash";
     drawCurve("curve", "curve-note", s.equity_history);
     renderCore(s);
+    renderAdvisor(s);
     document.getElementById("events-dash").innerHTML = feed(s.events.slice(0, 12), "No alerts yet.");
     document.getElementById("trades-dash").innerHTML = table(s.recent_trades.slice(0, 20),
       [["Time", r => r.t], ["Symbol", r => r.symbol], ["Side", r => r.side], ["Price", r => r.price],
