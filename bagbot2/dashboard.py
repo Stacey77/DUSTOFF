@@ -199,6 +199,15 @@ footer b{color:var(--text);font-weight:600}
 
   <!-- MARKET DATA -->
   <section class="view" id="v-market">
+    <div class="panel"><h2>Chart · paper trades</h2>
+      <div class="controls"><select id="chart-sym" style="padding:9px;border-radius:9px;background:#0f0c24;color:var(--text);border:1px solid var(--line)"></select><span class="sub" id="chart-note"></span></div>
+      <div class="two" style="margin-top:12px">
+        <div><svg id="pchart" viewBox="0 0 800 420" style="width:100%;height:auto;display:block"></svg>
+          <div class="sub">Candles with SMA (blue) and EMA (amber), RSI below. ▲ paper buy, ▼ paper sell. Simulated fills, not an execution feed.</div></div>
+        <div><iframe id="tv" style="width:100%;height:420px;border:0;border-radius:10px" title="TradingView chart"></iframe>
+          <div class="sub">TradingView chart, read-only. It shows market prices only, not paper trades.</div></div>
+      </div>
+    </div>
     <div class="panel"><h2>Symbols on paper</h2><div class="scroll" id="market"></div>
       <div class="note">Last prices come from the most recent engine cycle. Quotes are delayed and not an execution feed.</div></div>
     <div class="panel"><h2>Open positions</h2><div class="scroll" id="positions"></div></div>
@@ -253,6 +262,74 @@ function drawCurve(id, noteId, hist) {
   svg.innerHTML = '<line x1="0" y1="200" x2="600" y2="200" stroke="#2e2760"/>' +
     '<polyline fill="none" stroke="#8b5cf6" stroke-width="2.5" vector-effect="non-scaling-stroke" points="' + pts + '"/>';
   note.textContent = "Low " + money(lo) + " · High " + money(hi) + " · " + vals.length + " cycles";
+}
+// TradingView symbols where the bare ticker is ambiguous or crypto
+const TV_MAP = {"SPY": "AMEX:SPY", "BTC-USD": "KRAKEN:BTCUSD", "ETH-USD": "KRAKEN:ETHUSD"};
+function renderChart(s) {
+  const sel = document.getElementById("chart-sym");
+  const syms = s.symbols;
+  if (sel.options.length !== syms.length || [...sel.options].some((o, i) => o.value !== syms[i])) {
+    const keep = sel.value;
+    sel.innerHTML = syms.map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join("");
+    if (syms.includes(keep)) sel.value = keep;
+  }
+  const sym = sel.value;
+  const frame = document.getElementById("tv");
+  const url = "https://s.tradingview.com/widgetembed/?symbol=" + encodeURIComponent(TV_MAP[sym] || sym) +
+    "&interval=60&theme=dark&style=1&timezone=America%2FChicago&hidesidetoolbar=1&locale=en";
+  if (frame.dataset.src !== url) { frame.dataset.src = url; frame.src = url; }
+  drawPaperChart(sym, s);
+}
+function drawPaperChart(sym, s) {
+  const svg = document.getElementById("pchart"), note = document.getElementById("chart-note");
+  const bars = (s.charts && s.charts[sym]) || [];
+  if (bars.length < 2) { svg.innerHTML = ""; note.textContent = "Chart appears after the engine's first cycle with data for " + sym + "."; return; }
+  const W = 800, H = 420, L = 56, R = 12, PT = 12, PB = 14, priceH = 280, gap = 18;
+  const rsiTop = PT + priceH + gap, rsiH = H - PT - PB - priceH - gap;
+  const n = bars.length, slot = (W - L - R) / n, bw = Math.max(1, slot * 0.6);
+  const x = i => L + slot * (i + 0.5);
+  const lo = Math.min(...bars.map(b => b.l)), hi = Math.max(...bars.map(b => b.h));
+  const pad = (hi - lo) * 0.05 || 1, plo = lo - pad, phi = hi + pad;
+  const y = v => PT + (phi - v) / (phi - plo) * priceH;
+  const ry = v => rsiTop + (100 - v) / 100 * rsiH;
+  let out = "";
+  for (let k = 0; k <= 4; k++) {
+    const v = plo + (phi - plo) * k / 4, yy = y(v).toFixed(1);
+    out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '" stroke="#2e2760"/>' +
+      '<text x="' + (L - 6) + '" y="' + (y(v) + 4).toFixed(1) + '" fill="#9a94c4" font-size="11" text-anchor="end">' + v.toFixed(2) + '</text>';
+  }
+  bars.forEach((b, i) => {
+    const col = b.c >= b.o ? "#4ade80" : "#f87171", cx = x(i).toFixed(1);
+    out += '<line x1="' + cx + '" x2="' + cx + '" y1="' + y(b.h).toFixed(1) + '" y2="' + y(b.l).toFixed(1) + '" stroke="' + col + '"/>';
+    const top = y(Math.max(b.o, b.c)), bh = Math.max(1, Math.abs(y(b.o) - y(b.c)));
+    out += '<rect x="' + (x(i) - bw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + bh.toFixed(1) + '" fill="' + col + '"/>';
+  });
+  const line = (key, color) => '<polyline fill="none" stroke="' + color + '" stroke-width="1.6" points="' +
+    bars.map((b, i) => x(i).toFixed(1) + "," + y(b[key]).toFixed(1)).join(" ") + '"/>';
+  out += line("sma", "#38bdf8") + line("ema", "#fbbf24");
+  const idx = {};
+  bars.forEach((b, i) => { idx[b.t] = i; });
+  (s.recent_trades || []).filter(t => t.symbol === sym && idx[t.t] !== undefined).forEach(t => {
+    const i = idx[t.t], b = bars[i], buy = t.side === "BUY";
+    const cy = buy ? y(b.l) + 12 : y(b.h) - 12;
+    const pts = buy ? [[0, -7], [-6, 5], [6, 5]] : [[0, 7], [-6, -5], [6, -5]];
+    out += '<polygon fill="' + (buy ? "#4ade80" : "#f87171") + '" points="' +
+      pts.map(p => (x(i) + p[0]).toFixed(1) + "," + (cy + p[1]).toFixed(1)).join(" ") + '"><title>' +
+      esc(t.side + " " + t.qty + " @ " + t.price + " (" + t.reason + ")") + '</title></polygon>';
+  });
+  out += '<rect x="' + L + '" y="' + rsiTop + '" width="' + (W - L - R) + '" height="' + rsiH.toFixed(1) + '" fill="#120e28"/>';
+  [30, 70].forEach(v => {
+    out += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + ry(v).toFixed(1) + '" y2="' + ry(v).toFixed(1) +
+      '" stroke="#2e2760" stroke-dasharray="4 4"/><text x="' + (L - 6) + '" y="' + (ry(v) + 4).toFixed(1) +
+      '" fill="#9a94c4" font-size="11" text-anchor="end">' + v + '</text>';
+  });
+  out += '<polyline fill="none" stroke="#8b5cf6" stroke-width="1.6" points="' +
+    bars.map((b, i) => x(i).toFixed(1) + "," + ry(b.rsi).toFixed(1)).join(" ") + '"/>';
+  out += '<text x="' + L + '" y="' + (rsiTop - 4) + '" fill="#9a94c4" font-size="11">RSI</text>';
+  svg.innerHTML = out;
+  const last = bars[bars.length - 1];
+  note.textContent = "Last " + last.c.toFixed(2) + " · SMA " + last.sma.toFixed(2) + " · EMA " + last.ema.toFixed(2) +
+    " · RSI " + last.rsi.toFixed(1);
 }
 function fmtUptime(s) { const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h + "h " + m + "m"; }
 
@@ -368,6 +445,9 @@ async function refresh() {
       [["Symbol", r => r.sym], ["Qty", r => Number(r.qty).toFixed(2)], ["Entry", r => Number(r.entry_px).toFixed(2)],
        ["Stop", r => Number(r.stop).toFixed(2)], ["Take", r => Number(r.take).toFixed(2)]], "No open positions.");
 
+    // chart
+    renderChart(s);
+
     // alerts
     document.getElementById("events-all").innerHTML = feed(s.events, "No alerts yet. Trades, tuning decisions, drawdown breaches and errors appear here.");
 
@@ -416,6 +496,7 @@ document.querySelectorAll("aside a").forEach(a => a.addEventListener("click", ()
   document.getElementById("v-" + a.dataset.view).classList.add("on");
 }));
 
+document.getElementById("chart-sym").addEventListener("change", refresh);
 refresh();
 setInterval(refresh, 10000);
 </script></body></html>

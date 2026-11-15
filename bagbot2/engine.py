@@ -29,6 +29,7 @@ POSITION_FRACTION = 0.95      # share of each symbol's allocation actually deplo
 PERF_WINDOW = 10              # last N closed trades used for the performance check
 PERF_MIN_WIN_RATE = 0.30      # below this, force a retune
 PERF_TRIGGER_COOLDOWN_S = 3600
+CHART_BARS = 200              # bars kept per symbol for the dashboard chart
 
 
 def _now() -> str:
@@ -51,6 +52,7 @@ class PaperEngine:
         self.tune_log: list[dict] = []
         self.trades: list[dict] = []
         self.equity_history: list[dict] = []
+        self.charts: dict[str, list[dict]] = {}   # recent bars + indicators, not persisted
         self.errors: list[dict] = []
         self.events: list[dict] = []
         self.started = time.time()
@@ -190,8 +192,17 @@ class PaperEngine:
         latest_ts = str(ind.index[-1])
         closed_ts = str(ind.index[-2])
         entry_sig, exit_sig = signals(ind, p)
+        # Same timestamp strings as trade records, so the chart can place buy/sell markers.
+        recent = ind.tail(CHART_BARS)
+        chart = [
+            {"t": str(ts), "o": round(float(r.open), 4), "h": round(float(r.high), 4),
+             "l": round(float(r.low), 4), "c": round(float(r.close), 4),
+             "sma": round(float(r.sma), 4), "ema": round(float(r.ema), 4), "rsi": round(float(r.rsi), 2)}
+            for ts, r in zip(recent.index, recent.itertuples())
+        ]
 
         with self.lock:
+            self.charts[sym] = chart
             self.last_price[sym] = float(latest["close"])
             if self.paused:
                 return
@@ -351,6 +362,7 @@ class PaperEngine:
                 "tune_log": self.tune_log[-10:][::-1],
                 "errors": self.errors[-10:][::-1],
                 "equity_history": self.equity_history[-300:],
+                "charts": dict(self.charts),
                 "sharpe": self._risk_stats()[0],
                 "max_drawdown": self._risk_stats()[1],
                 "events": self.events[-60:][::-1],

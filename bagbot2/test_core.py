@@ -68,3 +68,18 @@ def test_events_feed_records_trades(monkeypatch, tmp_path):
     eng._record_trade({"t": "t", "symbol": "SPY", "side": "BUY", "price": 100.0, "qty": 2.0, "reason": "entry"})
     assert eng.events[-1]["kind"] == "trade"
     assert "BUY SPY" in eng.events[-1]["text"]
+
+
+def test_chart_bars_are_recorded_with_trade_timestamps(monkeypatch, tmp_path):
+    # Chart markers match trades by timestamp, so chart bars must use the same strings.
+    monkeypatch.setenv("BAGBOT_STATE_FILE", str(tmp_path / "s.json"))
+    import engine as engine_mod
+    from config import load_settings
+    monkeypatch.setattr(engine_mod, "fetch_bars", lambda sym, period, interval: _bars(400, seed=5))
+    eng = engine_mod.PaperEngine(load_settings())
+    sym = eng.s.symbols[0]
+    eng._process_symbol(sym)
+    chart = eng.status()["charts"][sym]
+    assert 2 <= len(chart) <= engine_mod.CHART_BARS
+    assert {"t", "o", "h", "l", "c", "sma", "ema", "rsi"} <= set(chart[-1])
+    assert all(c["l"] <= c["h"] for c in chart)
