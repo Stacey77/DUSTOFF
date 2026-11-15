@@ -117,6 +117,7 @@ pre.cfg{margin:0;font-size:12px;color:var(--muted);white-space:pre-wrap}
 .node.off,.hub.off{stroke:#6b7280}
 .lbl{fill:#eceaff;font-size:13px;font-weight:700;text-anchor:middle}
 .sub2{fill:#9a94c4;font-size:10px;text-anchor:middle}
+.lbl.sm{font-size:11px}
 footer{display:flex;flex-wrap:wrap;gap:18px;padding:9px 18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;background:var(--side)}
 footer b{color:var(--text);font-weight:600}
 </style></head>
@@ -344,7 +345,7 @@ function renderCore(s) {
     const x = cx + r * Math.cos(a) * 1.5, y = cy + r * Math.sin(a);
     lines += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="link' + (running ? " live" : "") + '"/>';
     nodes += '<g><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="34" class="node' + (running ? "" : " off") + '"/>' +
-      '<text x="' + x.toFixed(1) + '" y="' + (y - 2).toFixed(1) + '" class="lbl">' + esc(name) + '</text>' +
+      '<text x="' + x.toFixed(1) + '" y="' + (y - 2).toFixed(1) + '" class="lbl' + (name.length > 8 ? " sm" : "") + '">' + esc(name) + '</text>' +
       '<text x="' + x.toFixed(1) + '" y="' + (y + 12).toFixed(1) + '" class="sub2">' + esc(desc) + '</text></g>';
   });
   document.getElementById("core").innerHTML =
