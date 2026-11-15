@@ -116,3 +116,8 @@ Logs on the server: `journalctl -u bagbot2 -f` and `/opt/bagbot2/logs/bagbot2.lo
 - **Engine core is a labeled grid, not an animated network.** It shows the real components (market data, indicators, strategy, tuner, risk limits, paper broker, alerts) and whether the engine is running.
 - **No Neuro Advisor chat and no AI trading text.** The dashboard does not generate trade advice or order instructions. Alerts cover trades, tuning decisions, drawdown breaches and errors.
 - **No chart-pattern alerts or confidence percentages.** Any future pattern signal would need a backtested rule and its historical hit rate shown next to it.
+
+## Helper agents (paper only)
+
+- **Review agent** (`GET /api/review`, Agents tab): summarizes paper trades, win rate, open positions, errors and alerts. Reads only.
+- **Research agent** (`POST /api/research`, Agents tab, dashboard token required): backtests named parameter variants for one symbol on the full history and on the last 30% holdout. Flags variants with too few holdout trades to judge. Reads only: nothing is applied to the engine. Adopting a change still goes through the tuner or a deliberate edit of the settings.

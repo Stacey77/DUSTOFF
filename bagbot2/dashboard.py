@@ -6,9 +6,10 @@ import threading
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import Body, FastAPI, Header, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 
+from agents import research_variants, review_summary
 from backtest import simulate
 from config import load_settings
 from data import fetch_bars
@@ -133,6 +134,7 @@ footer b{color:var(--text);font-weight:600}
   <a data-view="strategy">Strategy Builder</a>
   <a data-view="performance">Performance Analytics</a>
   <a data-view="market">Market Data</a>
+  <a data-view="agents">Agents</a>
   <a data-view="alerts">Alerts</a>
   <a data-view="settings">Settings</a>
 </aside>
@@ -215,6 +217,27 @@ footer b{color:var(--text);font-weight:600}
   </section>
 
   <!-- ALERTS -->
+  <section class="view" id="v-agents">
+    <div class="panel">
+      <h2>Review agent · paper trades</h2>
+      <div class="controls"><button onclick="loadReview()">Refresh review</button></div>
+      <div class="msg" id="rv-msg">Summarizes paper results. Reads data only; changes nothing.</div>
+      <ul id="rv-out" style="margin-top:10px;line-height:1.6"></ul>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <h2>Research agent · backtest ideas</h2>
+      <div class="controls">
+        <select id="rs-sym"></select>
+        <input id="rs-tok" type="password" placeholder="dashboard token" autocomplete="off">
+      </div>
+      <div class="note">Variants are JSON, one list of objects. Each object sets StrategyParams fields, for example
+        [{"name":"RSI 25","rsi_oversold":25}]. Up to 20. Results are historical only and nothing is applied.</div>
+      <textarea id="rs-var" rows="5" style="width:100%;margin-top:8px;background:#0f0c24;color:#eceaff;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:monospace">[{"name":"RSI 25","rsi_oversold":25},{"name":"RSI 35","rsi_oversold":35}]</textarea>
+      <div class="controls" style="margin-top:8px"><button onclick="runResearch()">Run research</button></div>
+      <div class="msg" id="rs-msg"></div>
+      <div class="scroll" id="rs-out" style="margin-top:10px"></div>
+    </div>
+  </section>
   <section class="view" id="v-alerts">
     <div class="panel"><h2>Alerts &amp; events</h2><div class="feed" id="events-all" style="max-height:none"></div></div>
   </section>
@@ -489,12 +512,55 @@ async function runBacktest() {
      ["Profit factor", r => r.error ? "" : Number(r.profit_factor).toFixed(2)], ["Trades", r => r.error ? "" : r.trades]], "No results.");
 }
 
+async function fillSymbols() {
+  const sel = document.getElementById("rs-sym");
+  if (sel.options.length) return;
+  const st = await (await fetch("/api/state")).json();
+  (st.config && st.config.symbols || []).forEach(sym => {
+    const o = document.createElement("option"); o.value = sym; o.textContent = sym; sel.appendChild(o);
+  });
+}
+async function loadReview() {
+  const out = document.getElementById("rv-out");
+  const r = await fetch("/api/review");
+  if (!r.ok) { document.getElementById("rv-msg").textContent = "Review failed (" + r.status + ")"; return; }
+  const d = await r.json();
+  document.getElementById("rv-msg").textContent = d.note;
+  out.innerHTML = "";
+  (d.findings.length ? d.findings : ["Nothing to report."]).forEach(f => {
+    const li = document.createElement("li"); li.textContent = f; out.appendChild(li);
+  });
+}
+async function runResearch() {
+  const msg = document.getElementById("rs-msg");
+  const out = document.getElementById("rs-out");
+  let variants;
+  try { variants = JSON.parse(document.getElementById("rs-var").value); }
+  catch (e) { msg.textContent = "Variants are not valid JSON."; return; }
+  const tok = document.getElementById("rs-tok").value || document.getElementById("tok").value || document.getElementById("tok-bt").value;
+  msg.textContent = "Running research on the tuning history...";
+  const r = await fetch("/api/research", {method: "POST",
+    headers: {"X-Dashboard-Token": tok, "Content-Type": "application/json"},
+    body: JSON.stringify({symbol: document.getElementById("rs-sym").value, variants: variants})});
+  if (!r.ok) { msg.textContent = "Research failed (" + r.status + ")"; out.innerHTML = ""; return; }
+  const d = await r.json();
+  msg.textContent = d.note + " Holdout bars: " + d.holdout_bars + " of " + d.bars + ".";
+  out.innerHTML = table(d.rows.map(x => Object.assign({name: x.name, verdict: x.verdict}, {
+      ret: x.full.total_return, dd: x.full.max_drawdown, sh: x.full.sharpe, tr: x.full.trades,
+      hret: x.holdout.total_return, htr: x.holdout.trades})),
+    [["Variant", r => r.name], ["Full return", r => pct(r.ret)], ["Full max DD", r => pct(r.dd)],
+     ["Full Sharpe", r => Number(r.sh).toFixed(2)], ["Full trades", r => r.tr],
+     ["Holdout return", r => pct(r.hret)], ["Holdout trades", r => r.htr], ["Verdict", r => r.verdict]],
+    "No results.");
+}
+
 // tab switching
 document.querySelectorAll("aside a").forEach(a => a.addEventListener("click", () => {
   document.querySelectorAll("aside a").forEach(x => x.classList.remove("on"));
   document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
   a.classList.add("on");
   document.getElementById("v-" + a.dataset.view).classList.add("on");
+  if (a.dataset.view === "agents") { fillSymbols(); loadReview(); }
 }));
 
 document.getElementById("chart-sym").addEventListener("change", refresh);
@@ -597,6 +663,35 @@ def retune(x_dashboard_token: str | None = Header(default=None)):
 
     threading.Thread(target=job, daemon=True, name="manual-retune").start()
     return {"status": "retune started"}
+
+
+@app.get("/api/review")
+def review() -> dict:
+    """Read-only summary of paper results."""
+    return review_summary(engine.status())
+
+
+@app.post("/api/research")
+def research(body: dict = Body(...), x_dashboard_token: str | None = Header(default=None)) -> dict:
+    """Backtest named variants of one symbol's parameters. Read-only: nothing is applied."""
+    _require_token(x_dashboard_token)
+    sym = str(body.get("symbol", ""))
+    if sym not in settings.symbols:
+        raise HTTPException(400, "symbol is not in BAGBOT_SYMBOLS")
+    variants = body.get("variants", [])
+    if not isinstance(variants, list) or not all(isinstance(v, dict) for v in variants):
+        raise HTTPException(400, "variants must be a list of objects")
+    df = fetch_bars(sym, settings.tune_period, settings.data_interval)
+    with engine.lock:
+        base = engine.params[sym]
+    try:
+        out = research_variants(df, base, variants, start_cash=settings.starting_cash,
+                                commission=settings.commission_rate, slippage_bps=settings.slippage_bps,
+                                bars_per_year=settings.bars_per_year)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    out["symbol"] = sym
+    return out
 
 
 @app.post("/api/pause")
