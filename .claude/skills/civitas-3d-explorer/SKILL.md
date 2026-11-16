@@ -1,6 +1,6 @@
 ---
 name: civitas-3d-explorer
-description: Build, extend or debug Three.js 3D city explorers like Civitas Sapientia's: module layout, realism pipeline, crowds, AI tools, headless QA and known pitfalls.
+description: "Build, extend or debug Three.js 3D city explorers like Civitas Sapientia's: module layout, realism pipeline, crowds, AI tools, headless QA and known pitfalls."
 ---
 
 # Civitas 3D Explorer
