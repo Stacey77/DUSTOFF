@@ -151,55 +151,56 @@ ${isDavisBacon
 - Allowable Developer Fee under state QAP guidelines is 10%–15% of TDC ($${Math.round(totalCost * 0.12).toLocaleString()} at 12%). Schedule draws across 3 milestones: 30% at Initial Closing/Drawdown, 40% at 50% Construction Inspection, 30% at Final 8609/Certificate of Occupancy.`;
 }
 
-/* ── ARIA companion routes ──────────────────────────────────────────────── */
+/* ── ARIA companion routes (UTCP direct tools + A2A Agent Card) ─────────── */
 
-function loadMcpConfig(): Record<string, any> {
-  const candidates = [
-    path.join(__dirname, 'mcp.json'),
-    path.join(os.homedir(), 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json'),
-    path.join(os.homedir(), '.claude', 'claude_desktop_config.json'),
-  ];
-  for (const p of candidates) {
-    if (!fs.existsSync(p)) continue;
-    try {
-      const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
-      const servers = raw.servers || raw.mcpServers || {};
-      if (Object.keys(servers).length) return servers;
-    } catch { /* keep trying */ }
-  }
-  return {};
-}
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { runAll: ariaRunAll, runTool: ariaRunTool, agentCard } = require('./aria-tools');
 
-const MCP_SERVERS = loadMcpConfig();
+app.get('/api/aria/card', (_req, res) => res.json(agentCard));
 
-function ariaSysPrompt(ctx: any): string {
-  const connected = Object.keys(MCP_SERVERS).join(', ') || 'none';
-  return [
-    'You are ARIA — a singular, always-present AI companion.',
-    'You are a unified intelligence woven into the user\'s digital life.',
-    'You speak with precision, warmth, and depth — never hollow, never generic.',
-    `Connected MCP servers: ${connected}`,
-    `Local time: ${ctx.localTime} (${ctx.timeOfDay}), ${ctx.day}`,
-    `Session: ${ctx.sessionMin} min · ${ctx.todayMsgs} messages today`,
-    ctx.liveData ? `\nLive personal context from MCP:\n${ctx.liveData}` : '',
-    'Use live context naturally. Be concise by default.',
-    'You are ARIA — singular, omniscient, always present.',
-  ].filter(Boolean).join('\n');
-}
+app.get('/api/aria/context', async (_req, res) => {
+  const raw       = await ariaRunAll(process.env);
+  const connected: string[] = [];
+  const data: any = {};
+  if (raw.gmail_unread?.unreadCount !== undefined) { data.unreadCount = raw.gmail_unread.unreadCount; data.recentEmails = raw.gmail_unread.recentSubjects; connected.push('Gmail'); }
+  if (raw.calendar_today?.events?.length)  { data.events      = raw.calendar_today.events;  connected.push('Calendar'); }
+  if (raw.notion_recent?.pages?.length)    { data.notionPages  = raw.notion_recent.pages;    connected.push('Notion');   }
+  if (raw.drive_recent?.files?.length)     { data.driveFiles   = raw.drive_recent.files;     connected.push('Drive');    }
+  res.json({ available: connected.length > 0, connected, data });
+});
 
-app.get('/api/aria/context', (_req, res) => {
-  const connected = Object.keys(MCP_SERVERS);
-  res.json({ available: connected.length > 0, connected, data: null });
+app.post('/api/aria/tool', async (req: any, res: any) => {
+  const { name, args } = req.body;
+  if (!name) return res.status(400).json({ error: 'name required' });
+  const result = await ariaRunTool(name, args, process.env);
+  res.json({ name, result });
 });
 
 app.post('/api/aria/chat', (req: any, res: any) => {
-  const { messages = [], context = {} } = req.body;
+  const { messages = [], context = {}, liveData = {} } = req.body;
   if (!messages.length) return res.status(400).json({ error: 'messages required' });
+
+  const tools    = (agentCard.capabilities as any[]).map((c: any) => c.name).join(', ');
+  const sysLines = [
+    'You are ARIA — a singular, always-present AI companion.',
+    'You are a unified intelligence woven into the user\'s digital life.',
+    'You speak with precision, warmth, and depth — never hollow, never generic.',
+    `Available tools: ${tools}`,
+    `Local time: ${context.localTime} (${context.timeOfDay}), ${context.day}`,
+    `Session: ${context.sessionMin} min · ${context.todayMsgs} messages today`,
+  ];
+  if (liveData.events?.length)
+    sysLines.push('Upcoming: ' + liveData.events.map((e: any) => `${e.title} @ ${e.time}`).join(', '));
+  if (liveData.unreadCount !== undefined)
+    sysLines.push(`Unread emails: ${liveData.unreadCount}`);
+  if (liveData.notionPages?.length)
+    sysLines.push('Recent Notion pages: ' + liveData.notionPages.join(', '));
+  sysLines.push('Be concise by default. You are ARIA — singular, omniscient, always present.');
 
   const history = messages
     .map((m: any) => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`)
     .join('\n\n');
-  const prompt = `${ariaSysPrompt(context)}\n\n${history}\n\nAssistant:`;
+  const prompt = `${sysLines.filter(Boolean).join('\n')}\n\n${history}\n\nAssistant:`;
 
   res.setHeader('Content-Type',  'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
