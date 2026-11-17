@@ -2,6 +2,9 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import path from 'path';
+import os from 'os';
+import fs from 'fs';
+import { spawn } from 'child_process';
 import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
@@ -147,6 +150,93 @@ ${isDavisBacon
 **5. Developer Fee Cash Extraction**
 - Allowable Developer Fee under state QAP guidelines is 10%–15% of TDC ($${Math.round(totalCost * 0.12).toLocaleString()} at 12%). Schedule draws across 3 milestones: 30% at Initial Closing/Drawdown, 40% at 50% Construction Inspection, 30% at Final 8609/Certificate of Occupancy.`;
 }
+
+/* ── ARIA companion routes ──────────────────────────────────────────────── */
+
+function loadMcpConfig(): Record<string, any> {
+  const candidates = [
+    path.join(__dirname, 'mcp.json'),
+    path.join(os.homedir(), 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json'),
+    path.join(os.homedir(), '.claude', 'claude_desktop_config.json'),
+  ];
+  for (const p of candidates) {
+    if (!fs.existsSync(p)) continue;
+    try {
+      const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const servers = raw.servers || raw.mcpServers || {};
+      if (Object.keys(servers).length) return servers;
+    } catch { /* keep trying */ }
+  }
+  return {};
+}
+
+const MCP_SERVERS = loadMcpConfig();
+
+function ariaSysPrompt(ctx: any): string {
+  const connected = Object.keys(MCP_SERVERS).join(', ') || 'none';
+  return [
+    'You are ARIA — a singular, always-present AI companion.',
+    'You are a unified intelligence woven into the user\'s digital life.',
+    'You speak with precision, warmth, and depth — never hollow, never generic.',
+    `Connected MCP servers: ${connected}`,
+    `Local time: ${ctx.localTime} (${ctx.timeOfDay}), ${ctx.day}`,
+    `Session: ${ctx.sessionMin} min · ${ctx.todayMsgs} messages today`,
+    ctx.liveData ? `\nLive personal context from MCP:\n${ctx.liveData}` : '',
+    'Use live context naturally. Be concise by default.',
+    'You are ARIA — singular, omniscient, always present.',
+  ].filter(Boolean).join('\n');
+}
+
+app.get('/api/aria/context', (_req, res) => {
+  const connected = Object.keys(MCP_SERVERS);
+  res.json({ available: connected.length > 0, connected, data: null });
+});
+
+app.post('/api/aria/chat', (req: any, res: any) => {
+  const { messages = [], context = {} } = req.body;
+  if (!messages.length) return res.status(400).json({ error: 'messages required' });
+
+  const history = messages
+    .map((m: any) => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`)
+    .join('\n\n');
+  const prompt = `${ariaSysPrompt(context)}\n\n${history}\n\nAssistant:`;
+
+  res.setHeader('Content-Type',  'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection',    'keep-alive');
+  res.flushHeaders();
+
+  const send = (evt: string, data: any) =>
+    res.write(`event: ${evt}\ndata: ${JSON.stringify(data)}\n\n`);
+
+  const isWin = process.platform === 'win32';
+  const proc  = spawn(isWin ? 'claude.cmd' : 'claude', ['-p', '--no-markdown'], {
+    stdio: ['pipe', 'pipe', 'pipe'], shell: isWin,
+  });
+
+  proc.stdin.write(prompt);
+  proc.stdin.end();
+
+  let output = '';
+  proc.stdout.on('data', (chunk: Buffer) => { output += chunk.toString(); });
+  proc.on('close', (code: number) => {
+    const h = new Date().getHours();
+    const fb = code !== 0 || !output.trim()
+      ? (h >= 22 || h < 5 ? "It's late. What's on your mind?" : h < 12 ? "Morning. What are we working on?" : "I'm here. Ask anything.")
+      : output.trim();
+    send('delta', { text: fb });
+    send('done', {});
+    res.end();
+  });
+  proc.on('error', () => {
+    send('delta', { text: "I'm here. Ask anything." });
+    send('done', {});
+    res.end();
+  });
+  req.on('close', () => { try { proc.kill(); } catch { /* exited */ } });
+});
+
+/* ── end ARIA routes ─────────────────────────────────────────────────────── */
 
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
