@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova Shield Demo</title>
+<style>
+  :root { --bg:#0b0f14; --panel:#121821; --line:#223042; --text:#e6edf3; --muted:#8b9bb0; --accent:#4cc2ff; --ok:#3fd68b; --bad:#ff6b6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width:760px; margin:0 auto; padding:32px 16px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.sub { color:var(--muted); margin:0 0 24px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  h2 { font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 12px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  input { background:#0b0f14; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px 10px; min-width:0; flex:1 1 120px; }
+  button { background:#1b2a3a; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:8px 12px; cursor:pointer; }
+  button.primary { background:var(--accent); color:#04121c; border-color:var(--accent); font-weight:600; }
+  button:hover { filter:brightness(1.15); }
+  pre { margin:0; white-space:pre-wrap; word-break:break-word; font:13px/1.45 ui-monospace, Consolas, monospace; max-height:320px; overflow:auto; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Nova Shield demo app</h1>
+  <p class="sub">Log in with <b>demo / demo</b>. Your session is bound to a key that never leaves this browser.</p>
+
+  <section>
+    <h2>1. Log in</h2>
+    <div class="row">
+      <input id="user" value="demo" aria-label="Username">
+      <input id="pass" value="demo" type="password" aria-label="Password">
+      <button class="primary" id="login">Log in</button>
+      <button id="logout">Log out</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Try it</h2>
+    <div class="row">
+      <button id="me">Who am I</button>
+      <button id="refresh">Rotate token now</button>
+      <button id="transfer">Signed transfer ($250)</button>
+      <button id="link">Get self-destruct link</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <input id="code" placeholder="MFA code (123456)" aria-label="MFA code">
+      <button id="mfa">Verify MFA</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Log</h2>
+    <pre id="log"></pre>
+  </section>
+</main>
+<script src="/_shield/sdk.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shield Console</title>
+<style>
+  :root { --bg:#0a0d12; --panel:#11161e; --line:#1f2a38; --text:#e6edf3; --muted:#8696aa; --accent:#4cc2ff; --ok:#3fd68b; --warn:#f5b942; --bad:#ff5d5d; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .brand { font-weight:700; letter-spacing:.02em; }
+  .brand span { color:var(--accent); }
+  .status { color:var(--muted); font-size:12px; }
+  main { padding:20px; max-width:1200px; margin:0 auto; }
+  .gate { max-width:420px; margin:80px auto; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px; }
+  .gate h1 { font-size:18px; margin:0 0 6px; }
+  .gate p { color:var(--muted); margin:0 0 14px; }
+  input { width:100%; background:#080b10; border:1px solid var(--line); color:var(--text); border-radius:6px; padding:9px 10px; }
+  button { background:#18222f; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:7px 12px; cursor:pointer; font:inherit; }
+  button:hover { filter:brightness(1.2); }
+  button.primary { background:var(--accent); color:#03131d; border-color:var(--accent); font-weight:600; margin-top:10px; }
+  button.danger { border-color:#5a2323; color:#ffb3b3; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:20px; }
+  .stat { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .stat .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+  .stat .value { font-size:28px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .stat.alert .value { color:var(--bad); }
+  .grid { display:grid; grid-template-columns: minmax(0,1fr); gap:16px; }
+  .grid > * { min-width:0; }
+  @media (min-width: 980px) { .grid { grid-template-columns: minmax(0,1.1fr) minmax(0,.9fr); } }
+  @media (max-width: 600px) { main { padding:16px; } header { padding:12px 16px; } .stats { grid-template-columns:repeat(2, minmax(0,1fr)); } .stat .value { font-size:22px; } .card h2 { flex-wrap:wrap; } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .card h2 { font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin:0; padding:12px 14px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 14px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:500; font-size:12px; }
+  td.num { font-variant-numeric:tabular-nums; }
+  tr:last-child td { border-bottom:none; }
+  .events { max-height:520px; overflow:auto; }
+  .event { padding:8px 14px; border-bottom:1px solid var(--line); display:grid; grid-template-columns:auto 1fr; gap:2px 10px; }
+  .event .t { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+  .event .what { font-weight:500; }
+  .event .meta { grid-column:2; color:var(--muted); font-size:12px; word-break:break-word; }
+  .event.alert .what { color:var(--bad); }
+  .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; border:1px solid var(--line); color:var(--muted); }
+  .pill.alert { color:var(--bad); border-color:#5a2323; }
+  .empty { padding:16px 14px; color:var(--muted); }
+  .mono { font-family:ui-monospace, Consolas, monospace; font-size:12px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Nova <span>Shield</span> Console</div>
+  <div class="status" id="status">Not connected</div>
+</header>
+
+<div class="gate" id="gate">
+  <h1>Admin key</h1>
+  <p>Enter the SHIELD_ADMIN_KEY from your .env. It stays in this browser tab only.</p>
+  <input id="key" type="password" autocomplete="off" aria-label="Admin key">
+  <button class="primary" id="connect">Connect</button>
+  <p id="gateErr" style="color:var(--bad);margin-top:10px"></p>
+</div>
+
+<main id="app" class="hidden">
+  <div class="stats">
+    <div class="stat"><div class="label">Apps protected</div><div class="value" id="sApps">0</div></div>
+    <div class="stat"><div class="label">Active sessions</div><div class="value" id="sActive">0</div></div>
+    <div class="stat"><div class="label">Revoked (24h)</div><div class="value" id="sRevoked">0</div></div>
+    <div class="stat alert"><div class="label">Hijack alerts (24h)</div><div class="value" id="sAlerts">0</div></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <h2>Apps <button class="danger" id="killAll">Kill all sessions</button></h2>
+        <div class="scroll"><table>
+          <thead><tr><th>App</th><th>Active</th><th>Revoked 24h</th><th>Alerts 24h</th><th></th></tr></thead>
+          <tbody id="apps"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h2>Active sessions</h2>
+        <div class="scroll"><table>
+          <thead><tr><th>App</th><th>User</th><th>Device</th><th>Last seen</th><th></th></tr></thead>
+          <tbody id="sessions"></tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Security events</h2>
+      <div class="events" id="events"></div>
+    </div>
+  </div>
+</main>
+<script src="/console/console.js"></script>
+</body>
+</html>
