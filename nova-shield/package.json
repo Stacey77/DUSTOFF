@@ -1,0 +1,27 @@
+{
+  "name": "nova-shield",
+  "version": "0.1.0",
+  "description": "Nova Shield \u2014 device-bound session security and self-destruct tokens for Nova Digitus apps",
+  "type": "module",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Nova Digitus Designs LLC",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    "./middleware": "./middleware/index.js",
+    "./webhook": "./middleware/webhook.js",
+    "./core": "./core/server.js"
+  },
+  "scripts": {
+    "core": "node core/server.js",
+    "demo": "node demo/server.js",
+    "helix": "node apps/helix/server.js",
+    "hash-password": "node apps/helix/hash-password.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
