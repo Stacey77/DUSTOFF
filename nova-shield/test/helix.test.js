@@ -25,7 +25,7 @@ before(async () => {
   coreSrv = core.app.listen(0, '127.0.0.1');
   await new Promise((r) => coreSrv.once('listening', r));
   CORE = `http://127.0.0.1:${coreSrv.address().port}`;
-  helixSrv = createHelixApp({ coreUrl: CORE, appKey: APP_KEY, username: 'stacey', passwordHash: HASH, consoleFile }).listen(0, '127.0.0.1');
+  helixSrv = createHelixApp({ coreUrl: CORE, appKey: APP_KEY, username: 'stacey', passwordHash: HASH, consoleFile, trustProxy: true }).listen(0, '127.0.0.1');
   await new Promise((r) => helixSrv.once('listening', r));
   HELIX = `http://127.0.0.1:${helixSrv.address().port}`;
 });
@@ -95,6 +95,12 @@ test('kill switch in the Shield Console kicks the HELIX user out', async () => {
 test('login is throttled after 5 failures from one IP', async () => {
   for (let i = 0; i < 5; i++) await login('bad password 123', '192.0.2.99');
   assert.equal((await login(PASSWORD, '192.0.2.99')).status, 429);
+});
+
+test('a burst of parallel guesses still gets only 5 tries', async () => {
+  const results = await Promise.all(Array.from({ length: 12 }, () => login('parallel guess 123', '192.0.2.150')));
+  assert.equal(results.filter((r) => r.status === 401).length, 5);
+  assert.equal(results.filter((r) => r.status === 429).length, 7);
 });
 
 test('requires credentials to start', () => {

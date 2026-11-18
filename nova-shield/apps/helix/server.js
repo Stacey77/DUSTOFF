@@ -42,17 +42,17 @@ export function createHelixApp({
   app.use(express.json({ limit: '8kb' }));
   app.use(shield.routes());
 
-  // Simple login throttle: 5 failed tries per IP per 15 minutes.
-  const fails = new Map();
-  const tooMany = (ip) => {
-    const f = fails.get(ip);
-    if (!f || Date.now() - f.first > 15 * 60_000) return false;
-    return f.count >= 5;
-  };
-  const recordFail = (ip) => {
-    const f = fails.get(ip);
-    if (!f || Date.now() - f.first > 15 * 60_000) fails.set(ip, { first: Date.now(), count: 1 });
-    else f.count += 1;
+  // Login throttle: 5 tries per IP per 15 minutes. Every attempt is counted *before* the slow
+  // password check starts, so a burst of parallel guesses can't all slip in ahead of the count.
+  // A successful sign-in clears the count.
+  const attempts = new Map();
+  const takeAttempt = (ip) => {
+    const now = Date.now();
+    let a = attempts.get(ip);
+    if (!a || now - a.first > 15 * 60_000) { a = { first: now, count: 0 }; attempts.set(ip, a); }
+    if (a.count >= 5) return false;
+    a.count += 1;
+    return true;
   };
 
   const pageCsp = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
@@ -64,14 +64,14 @@ export function createHelixApp({
 
   app.post('/login', async (req, res) => {
     const ip = req.ip;
-    if (tooMany(ip)) return res.status(429).json({ error: 'too_many_attempts' });
+    if (!takeAttempt(ip)) return res.status(429).json({ error: 'too_many_attempts' });
     const { username: u, password, publicKeyJwk } = req.body || {};
     // Compare fixed-length digests so any input (including non-ASCII) is a clean yes/no, never a throw.
     const digest = (v) => createHash('sha256').update(String(v)).digest();
     const userOk = typeof u === 'string' && timingSafeEqual(digest(u), digest(username));
     const passOk = await checkPassword(password, passwordHash);
-    if (!userOk || !passOk) { recordFail(ip); return res.status(401).json({ error: 'bad_credentials' }); }
-    fails.delete(ip);
+    if (!userOk || !passOk) return res.status(401).json({ error: 'bad_credentials' });
+    attempts.delete(ip);
     try {
       await shield.startSession(req, res, { userId: username, publicKeyJwk });
       res.json({ ok: true });

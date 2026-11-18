@@ -1,7 +1,12 @@
 (function () {
   var params = new URLSearchParams(location.search);
-  var next = params.get('next') || '/';
-  if (next.charAt(0) !== '/' || next.charAt(1) === '/') next = '/';   // same-site paths only
+  // Only ever return to a page on this site. Resolving against our origin (rather than checking
+  // characters) also catches tricks like "/\\evil.example" that browsers treat as another site.
+  var next = '/';
+  try {
+    var target = new URL(params.get('next') || '/', location.origin);
+    if (target.origin === location.origin) next = target.pathname + target.search + target.hash;
+  } catch (_) { next = '/'; }
   var reason = params.get('r');
   var $ = function (id) { return document.getElementById(id); };
 

@@ -17,7 +17,7 @@
   var KEY_ID = 'device';
   var basePath = '/_shield';
   var timer = null;
-  var keyPromise = null;
+  var retryDelay = 0;
 
   function b64url(buf) {
     var bytes = new Uint8Array(buf);
@@ -40,18 +40,22 @@
     });
   }
 
+  /**
+   * The device key lives in IndexedDB and is read fresh for every signature, never cached in memory,
+   * so all tabs always use the same key: after a log-out and log-in in one tab, the other tabs
+   * pick up the new key instead of signing the new session's cookie with the old one.
+   */
   function getKeyPair() {
-    if (!keyPromise) {
-      keyPromise = idb('readonly', function (s) { return s.get(KEY_ID); }).then(function (pair) {
-        if (pair && pair.privateKey) return pair;
-        return crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify'])
-          .then(function (fresh) {
-            return idb('readwrite', function (s) { return s.put(fresh, KEY_ID); }).then(function () { return fresh; });
-          });
-      });
-      keyPromise.catch(function () { keyPromise = null; });
-    }
-    return keyPromise;
+    return idb('readonly', function (s) { return s.get(KEY_ID); }).then(function (pair) {
+      if (pair && pair.privateKey) return pair;
+      return crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify'])
+        .then(function (fresh) {
+          // add() (not put) so two tabs generating at once can't overwrite each other: the loser re-reads.
+          return idb('readwrite', function (s) { return s.add(fresh, KEY_ID); })
+            .then(function () { return fresh; })
+            .catch(function () { return idb('readonly', function (s) { return s.get(KEY_ID); }); });
+        });
+    });
   }
 
   function sign(message) {
@@ -90,12 +94,24 @@
     return doRefresh();
   }
 
+  var FATAL = { revoked: 1, unknown_session: 1, no_session: 1 };
+
   function schedule(expiresAt) {
     clearTimeout(timer);
     var wait = Math.max(5000, (expiresAt - Date.now()) - 60000); // refresh a minute before expiry
-    timer = setTimeout(function () {
-      refresh().catch(function (e) { emit('error', e); });
-    }, wait);
+    timer = setTimeout(scheduledRefresh, wait);
+  }
+
+  /** Background rotation. A temporary failure (offline, Core restarting) retries with backoff
+      instead of stopping; a dead session stops and tells the page. */
+  function scheduledRefresh() {
+    refresh().then(function () { retryDelay = 0; }).catch(function (e) {
+      if (FATAL[e.message]) { emit('revoked', e); return; }
+      emit('error', e);
+      retryDelay = Math.min(retryDelay ? retryDelay * 2 : 15000, 300000); // 15s, 30s, 60s ... max 5 min
+      clearTimeout(timer);
+      timer = setTimeout(scheduledRefresh, retryDelay);
+    });
   }
 
   var listeners = {};
@@ -156,7 +172,6 @@
     /** Call on logout: destroys the device key so the next login gets a fresh one. */
     reset: function () {
       clearTimeout(timer);
-      keyPromise = null;
       return idb('readwrite', function (s) { return s.delete(KEY_ID); });
     },
   };
