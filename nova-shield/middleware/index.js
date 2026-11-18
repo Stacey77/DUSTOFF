@@ -15,7 +15,10 @@ function parseCookies(header = '') {
     const i = part.indexOf('=');
     if (i < 1) continue;
     const k = part.slice(0, i).trim();
-    if (!(k in out)) out[k] = decodeURIComponent(part.slice(i + 1).trim());
+    if (!(k in out)) {
+      const value = part.slice(i + 1).trim();
+      try { out[k] = decodeURIComponent(value); } catch { out[k] = value; }   // another site's odd cookie can't break auth
+    }
   }
   return out;
 }
@@ -68,12 +71,12 @@ export function createShield({
   const deny = (res, status, error) => res.status(status).json({ error });
   const isDead = (reason) => reason === 'revoked' || reason === 'unknown_session';
 
+  /** X-Shield-Proof: <unix ts>.<random nonce>.<signature of "ts\nnonce\nMETHOD\npath"> */
   function proofOf(req) {
     const header = req.get('x-shield-proof');
     if (!header) return null;
-    const i = header.indexOf('.');
-    if (i < 1) return { ts: '', signature: '', method: req.method, path: req.originalUrl };
-    return { ts: header.slice(0, i), signature: header.slice(i + 1), method: req.method, path: req.originalUrl };
+    const [ts = '', nonce = '', signature = ''] = header.split('.');
+    return { ts, nonce, signature, method: req.method, path: req.originalUrl };
   }
 
   /**
@@ -135,11 +138,15 @@ export function createShield({
     return router;
   }
 
-  /** Call from your login route after you've checked the user's credentials. */
-  async function startSession(req, res, { userId, publicKeyJwk }) {
+  /**
+   * Call from your login route after you've checked the user's credentials.
+   * Pass mfa: true only if this login itself included a passkey/MFA check; otherwise routes with
+   * protect({ stepUp }) will ask for one first.
+   */
+  async function startSession(req, res, { userId, publicKeyJwk, mfa = false }) {
     const old = tokenOf(req);
     if (old) await core('/v1/sessions/logout', { accessToken: old }).catch(() => {});
-    const r = await core('/v1/sessions', { userId, publicKeyJwk, ctx: getContext(req) });
+    const r = await core('/v1/sessions', { userId, publicKeyJwk, ctx: getContext(req), mfa: mfa === true });
     setCookie(res, r.accessToken);
     return { sessionId: r.sessionId, expiresAt: r.expiresAt };
   }

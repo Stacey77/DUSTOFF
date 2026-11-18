@@ -68,14 +68,10 @@ export class Vault {
       }
     }
 
-    rec.uses += 1;
-    const remainingUses = rec.maxUses === null ? null : rec.maxUses - rec.uses;
-    if (remainingUses === 0) {
-      await this.store.deleteVault(rec.hash);
-      await this.log('vault.burned', { appId, userId: rec.subject }, { tokenType: rec.type });
-    } else {
-      await this.store.putVault(rec);
-    }
+    const used = await this.store.consumeVault(rec.hash);   // atomic: a racing redemption gets null
+    if (!used) return { valid: false, reason: 'unknown_or_destroyed' };
+    if (used.burned) await this.log('vault.burned', { appId, userId: rec.subject }, { tokenType: rec.type });
+    const remainingUses = rec.maxUses === null ? null : Math.max(0, rec.maxUses - used.uses);
     return { valid: true, type: rec.type, subject: rec.subject, data: rec.data, remainingUses, expiresAt: rec.expiresAt };
   }
 }

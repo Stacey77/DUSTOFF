@@ -101,17 +101,29 @@
   var listeners = {};
   function emit(type, detail) { (listeners[type] || []).forEach(function (fn) { try { fn(detail); } catch (_) {} }); }
 
-  /** fetch() that adds a per-request proof signed by the device key. Retries once after refresh. */
+  function randomNonce() {
+    var b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    return b64url(b.buffer);
+  }
+
+  /**
+   * fetch() that adds a per-request proof signed by the device key. Accepts the same arguments as
+   * fetch(), including a Request object (its method, headers and body are kept). Retries once after
+   * a refresh if the token had expired.
+   */
   function shieldFetch(input, init) {
-    init = init || {};
-    var url = new URL(typeof input === 'string' ? input : input.url, location.href);
-    var method = (init.method || 'GET').toUpperCase();
+    // Normalize once; every attempt sends a clone, so the body is still unread for the retry.
+    var base = new Request(input, init);
+    var url = new URL(base.url);
+    var method = base.method.toUpperCase();
     var attempt = function () {
       var ts = Math.floor(Date.now() / 1000);
-      return sign(ts + '\n' + method + '\n' + url.pathname + url.search).then(function (sig) {
-        var headers = new Headers(init.headers || {});
-        headers.set('x-shield-proof', ts + '.' + sig);
-        return fetch(url.toString(), Object.assign({}, init, { headers: headers, credentials: 'same-origin' }));
+      var nonce = randomNonce();
+      return sign(ts + '\n' + nonce + '\n' + method + '\n' + url.pathname + url.search).then(function (sig) {
+        var headers = new Headers(base.headers);
+        headers.set('x-shield-proof', ts + '.' + nonce + '.' + sig);
+        return fetch(new Request(base.clone(), { headers: headers, credentials: 'same-origin' }));
       });
     };
     return attempt().then(function (res) {

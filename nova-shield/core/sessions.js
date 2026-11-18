@@ -25,19 +25,20 @@ export class SessionService {
     this.log = log;
   }
 
-  async create(appId, { userId, publicKeyJwk, ctx } = {}) {
+  async create(appId, { userId, publicKeyJwk, ctx, mfa = false } = {}) {
     if (!userId) throw httpError(400, 'userId_required');
     if (!isPublicP256Jwk(publicKeyJwk)) throw httpError(400, 'invalid_public_key');
     const now = this.clock();
     const session = {
       id: randomToken('ses_', 16), appId, userId: String(userId).slice(0, 200),
       publicKeyJwk: publicJwk(publicKeyJwk), device: keyThumbprint(publicKeyJwk),
-      baseline: pickContext(ctx), createdAt: now, lastSeenAt: now, lastStepUpAt: now,
+      // A password-only login is not a step-up. Only a login the app confirms included MFA/passkey counts.
+      baseline: pickContext(ctx), createdAt: now, lastSeenAt: now, lastStepUpAt: mfa === true ? now : null,
       revokedAt: null, revokeReason: null,
     };
     await this.store.putSession(session);
     const issued = await this.#issueToken(session);
-    await this.log('session.created', session, { device: session.device });
+    await this.log('session.created', session, { device: session.device, mfa: mfa === true });
     return { sessionId: session.id, ...issued };
   }
 
@@ -51,12 +52,13 @@ export class SessionService {
     return { accessToken: token, expiresAt: now + this.cfg.accessTtlSec * 1000 };
   }
 
-  async #resolve(accessToken, { allowExpired = false } = {}) {
+  async #resolve(appId, accessToken, { allowExpired = false } = {}) {
     if (typeof accessToken !== 'string' || !accessToken) return { error: 'no_session' };
     const rec = await this.store.getToken(sha256(accessToken));
     if (!rec) return { error: 'unknown_session' };
     const session = await this.store.getSession(rec.sessionId);
-    if (!session) return { error: 'unknown_session' };
+    // A session belongs to the app that created it; another app's key can't see or change it.
+    if (!session || session.appId !== appId) return { error: 'unknown_session' };
     if (session.revokedAt) return { error: 'revoked', session };
     const now = this.clock();
 
@@ -80,8 +82,8 @@ export class SessionService {
   }
 
   /** Called by the middleware on every protected request. */
-  async verify(accessToken, { ctx = {}, proof = null, stepUpWithinSec = null } = {}) {
-    const r = await this.#resolve(accessToken);
+  async verify(appId, accessToken, { ctx = {}, proof = null, stepUpWithinSec = null } = {}) {
+    const r = await this.#resolve(appId, accessToken);
     if (r.error) return { valid: false, reason: r.error };
     const { session } = r;
 
@@ -107,25 +109,28 @@ export class SessionService {
     await this.store.putSession(session);
 
     let stepUpRequired = risk.action === 'step_up';
-    if (stepUpWithinSec != null && now - session.lastStepUpAt > Number(stepUpWithinSec) * 1000) stepUpRequired = true;
+    if (stepUpWithinSec != null && (!session.lastStepUpAt || now - session.lastStepUpAt > Number(stepUpWithinSec) * 1000)) stepUpRequired = true;
 
     return { valid: true, session: publicSession(session), risk, proof: proofValid, stepUpRequired };
   }
 
-  async #checkProof(session, { ts, signature, method, path }) {
+  async #checkProof(session, { ts, nonce, signature, method, path }) {
     const now = this.clock();
-    if (!/^\d{9,12}$/.test(String(ts))) return 'proof_malformed';
+    if (!/^\d{9,12}$/.test(String(ts)) || !/^[A-Za-z0-9_-]{16,64}$/.test(String(nonce))) return 'proof_malformed';
     if (Math.abs(now - Number(ts) * 1000) > this.cfg.proofWindowSec * 1000) return 'proof_expired';
     if (typeof signature !== 'string' || !method || !path) return 'proof_malformed';
-    const message = `${ts}\n${String(method).toUpperCase()}\n${path}`;
+    const message = `${ts}\n${nonce}\n${String(method).toUpperCase()}\n${path}`;
     if (!(await verifySignature(session.publicKeyJwk, message, signature))) return 'bad_signature';
-    if (!(await this.store.markProof(sha256(signature), now + 2 * this.cfg.proofWindowSec * 1000))) return 'proof_replayed';
+    // Replay is keyed on what was signed (session + time + nonce), never on the signature's encoding,
+    // so re-encoding or re-signing a captured proof can't sneak it through twice.
+    const replayKey = sha256(`${session.id}|${ts}|${nonce}`);
+    if (!(await this.store.markProof(replayKey, now + 2 * this.cfg.proofWindowSec * 1000))) return 'proof_replayed';
     return true;
   }
 
   /** Step 1 of refresh: hand out a single-use nonce that self-destructs in nonceTtlSec. */
-  async challenge(accessToken) {
-    const r = await this.#resolve(accessToken, { allowExpired: true });
+  async challenge(appId, accessToken) {
+    const r = await this.#resolve(appId, accessToken, { allowExpired: true });
     if (r.error) return { ok: false, reason: r.error };
     const nonce = randomToken('nnc_', 24);
     await this.store.putNonce({
@@ -136,8 +141,8 @@ export class SessionService {
   }
 
   /** Step 2 of refresh: the browser signs the nonce with its device key and gets a rotated token. */
-  async refresh(accessToken, { nonce, signature, ctx = {} } = {}) {
-    const r = await this.#resolve(accessToken, { allowExpired: true });
+  async refresh(appId, accessToken, { nonce, signature, ctx = {} } = {}) {
+    const r = await this.#resolve(appId, accessToken, { allowExpired: true });
     if (r.error) return { ok: false, reason: r.error };
     const { session, rec } = r;
 
@@ -156,16 +161,16 @@ export class SessionService {
     }
 
     const now = this.clock();
-    rec.rotatedAt = now;
-    await this.store.putToken(rec);
+    // Atomic: only one refresh can rotate a given token, so two racing refreshes can't fork the session.
+    if (!(await this.store.rotateToken(rec.hash, now))) return { ok: false, reason: 'superseded' };
     session.lastSeenAt = now;
     await this.store.putSession(session);
     return { ok: true, ...(await this.#issueToken(session)) };
   }
 
   /** The app calls this after the user passes a passkey / MFA check. Resets the risk baseline. */
-  async stepUp(accessToken, { ctx = {} } = {}) {
-    const r = await this.#resolve(accessToken);
+  async stepUp(appId, accessToken, { ctx = {} } = {}) {
+    const r = await this.#resolve(appId, accessToken);
     if (r.error) return { ok: false, reason: r.error };
     const { session } = r;
     session.lastStepUpAt = this.clock();
@@ -175,10 +180,10 @@ export class SessionService {
     return { ok: true, lastStepUpAt: session.lastStepUpAt };
   }
 
-  async logout(accessToken) {
+  async logout(appId, accessToken) {
     const rec = typeof accessToken === 'string' ? await this.store.getToken(sha256(accessToken)) : null;
     const session = rec ? await this.store.getSession(rec.sessionId) : null;
-    if (session && !session.revokedAt) await this.revoke(session, 'logout');
+    if (session && session.appId === appId && !session.revokedAt) await this.revoke(session, 'logout');
     return { ok: true };
   }
 

@@ -65,25 +65,23 @@ export function createCore({ appKeys = {}, adminKey, config: overrides, clock = 
   const v1 = express.Router();
   v1.use(appAuth);
   v1.post('/sessions', async (req, res) => {
-    const { userId, publicKeyJwk, ctx } = body(req);
-    res.json(await sessions.create(req.appId, { userId, publicKeyJwk, ctx }));
+    const { userId, publicKeyJwk, ctx, mfa } = body(req);
+    res.json(await sessions.create(req.appId, { userId, publicKeyJwk, ctx, mfa }));
   });
   v1.post('/sessions/verify', async (req, res) => {
     const { accessToken, ctx, proof, stepUpWithinSec } = body(req);
-    const r = await sessions.verify(accessToken, { ctx, proof, stepUpWithinSec });
-    if (r.valid && r.session.appId !== req.appId) return res.json({ valid: false, reason: 'unknown_session' });
-    res.json(r);
+    res.json(await sessions.verify(req.appId, accessToken, { ctx, proof, stepUpWithinSec }));
   });
-  v1.post('/sessions/challenge', async (req, res) => res.json(await sessions.challenge(body(req).accessToken)));
+  v1.post('/sessions/challenge', async (req, res) => res.json(await sessions.challenge(req.appId, body(req).accessToken)));
   v1.post('/sessions/refresh', async (req, res) => {
     const { accessToken, nonce, signature, ctx } = body(req);
-    res.json(await sessions.refresh(accessToken, { nonce, signature, ctx }));
+    res.json(await sessions.refresh(req.appId, accessToken, { nonce, signature, ctx }));
   });
   v1.post('/sessions/stepup', async (req, res) => {
     const { accessToken, ctx } = body(req);
-    res.json(await sessions.stepUp(accessToken, { ctx }));
+    res.json(await sessions.stepUp(req.appId, accessToken, { ctx }));
   });
-  v1.post('/sessions/logout', async (req, res) => res.json(await sessions.logout(body(req).accessToken)));
+  v1.post('/sessions/logout', async (req, res) => res.json(await sessions.logout(req.appId, body(req).accessToken)));
   v1.post('/vault/issue', async (req, res) => res.json(await vault.issue(req.appId, body(req))));
   v1.post('/vault/redeem', async (req, res) => {
     const { token, ctx, sessionId, match } = body(req);

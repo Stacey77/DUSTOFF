@@ -37,16 +37,16 @@ class Browser {
     this.keys = await subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify']);
     return this;
   }
+  async proof(method, path, { ts = Math.floor(now / 1000), nonce = randomBytes(16).toString('base64url') } = {}) {
+    return `${ts}.${nonce}.${await this.sign(`${ts}\n${nonce}\n${method}\n${path}`)}`;
+  }
   async sign(msg) { return b64url(await subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, this.keys.privateKey, new TextEncoder().encode(msg))); }
   async req(path, { method = 'GET', body, proof = false, sdk = false } = {}) {
     const headers = { 'user-agent': this.ua, 'x-forwarded-for': this.ip };
     if (this.cookie) headers.cookie = this.cookie;
     if (body) headers['content-type'] = 'application/json';
     if (sdk) headers['x-shield-sdk'] = '1';
-    if (proof) {
-      const ts = Math.floor(now / 1000);
-      headers['x-shield-proof'] = `${ts}.${await this.sign(`${ts}\n${method}\n${path}`)}`;
-    }
+    if (proof) headers['x-shield-proof'] = await this.proof(method, path);
     const res = await fetch(APP + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
     for (const c of res.headers.getSetCookie()) {
       const [pair] = c.split(';');
@@ -124,22 +124,33 @@ test('STOLEN COOKIE: a signed-request route rejects the attacker even before exp
   assert.equal((await v.req('/api/me')).status, 401);
 });
 
-test('legit signed request with fresh login passes; a replayed proof fails', async () => {
+test('password-only login does NOT count as MFA: the sensitive route asks for step-up first', async () => {
   const v = await victim();
+  const r = await v.req('/api/transfer', { method: 'POST', body: { amount: 250 }, proof: true });
+  assert.equal(r.body.error, 'step_up_required');
+  assert.equal((await v.req('/api/mfa', { method: 'POST', body: { code: '123456' } })).status, 200);
   const ok = await v.req('/api/transfer', { method: 'POST', body: { amount: 250 }, proof: true });
   assert.equal(ok.status, 200, JSON.stringify(ok.body));
-  // capture and replay the exact same proof header
+});
+
+test('a replayed proof fails, even re-encoded or re-signed', async () => {
+  const v = await victim();
+  await v.req('/api/mfa', { method: 'POST', body: { code: '123456' } });
   const ts = Math.floor(now / 1000);
-  const header = `${ts}.${await v.sign(`${ts}\nPOST\n/api/transfer`)}`;
-  const send = () => fetch(APP + '/api/transfer', { method: 'POST', headers: { cookie: v.cookie, 'user-agent': UA, 'x-forwarded-for': v.ip, 'x-shield-proof': header } });
-  assert.equal((await send()).status, 200);
-  assert.equal((await (await send()).json()).error, 'proof_replayed');
+  const nonce = randomBytes(16).toString('base64url');
+  const header = await v.proof('POST', '/api/transfer', { ts, nonce });
+  const send = (h) => fetch(APP + '/api/transfer', { method: 'POST', headers: { cookie: v.cookie, 'user-agent': UA, 'x-forwarded-for': v.ip, 'x-shield-proof': h } });
+  assert.equal((await send(header)).status, 200);
+  assert.equal((await (await send(header)).json()).error, 'proof_replayed');
+  assert.equal((await (await send(header + '==')).json()).error, 'proof_replayed');          // padded signature
+  const resigned = await v.proof('POST', '/api/transfer', { ts, nonce });                      // new ECDSA signature, same request
+  assert.notEqual(resigned, header);
+  assert.equal((await (await send(resigned)).json()).error, 'proof_replayed');
 });
 
 test('a proof older than 60 seconds self-destructs', async () => {
   const v = await victim();
-  const ts = Math.floor(now / 1000) - 61;
-  const header = `${ts}.${await v.sign(`${ts}\nGET\n/api/me`)}`;
+  const header = await v.proof('GET', '/api/me', { ts: Math.floor(now / 1000) - 61 });
   const res = await fetch(APP + '/api/me', { headers: { cookie: v.cookie, 'user-agent': UA, 'x-forwarded-for': v.ip, 'x-shield-proof': header } });
   assert.equal((await res.json()).error, 'proof_expired');
 });
@@ -181,6 +192,8 @@ test('RISK ENGINE: new browser + new network revokes; new browser alone asks for
 
 test('STEP-UP: sensitive route needs MFA within 5 minutes', async () => {
   const v = await victim();
+  await v.req('/api/mfa', { method: 'POST', body: { code: '123456' } });
+  assert.equal((await v.req('/api/transfer', { method: 'POST', body: { amount: 1 }, proof: true })).status, 200);
   advance(301);
   await v.refresh();
   const r = await v.req('/api/transfer', { method: 'POST', body: { amount: 1 }, proof: true });
@@ -237,7 +250,62 @@ test('WEBHOOK: signed deliveries self-destruct after 60s and cannot be replayed'
   assert.equal(verifyWebhook(secret, body, header, { now: (t + 61) * 1000 }).reason, 'self_destructed');
 });
 
+test('VAULT: two simultaneous redemptions of a single-use token: exactly one wins', async () => {
+  for (let i = 0; i < 20; i++) {
+    const t = await core.vault.issue('demo', { type: 'download' });
+    const results = await Promise.all([core.vault.redeem('demo', t.token), core.vault.redeem('demo', t.token), core.vault.redeem('demo', t.token)]);
+    assert.equal(results.filter((r) => r.valid).length, 1);
+    assert.equal((await core.vault.redeem('demo', t.token)).valid, false);
+  }
+});
+
+test('APP ISOLATION: another app\'s key cannot verify, step up, refresh or log out a session', async () => {
+  const v = await victim();
+  const token = decodeURIComponent(v.cookie.split('=')[1]);
+  const ctx = { ua: UA, ip: v.ip };
+  assert.equal((await core.sessions.verify('helix', token, { ctx })).reason, 'unknown_session');
+  assert.equal((await core.sessions.stepUp('helix', token, { ctx })).reason, 'unknown_session');
+  assert.equal((await core.sessions.challenge('helix', token)).reason, 'unknown_session');
+  await core.sessions.logout('helix', token);
+  assert.equal((await v.req('/api/me')).status, 200);   // still alive: helix couldn't touch it
+});
+
+test('two racing refreshes cannot fork a session', async () => {
+  const v = await victim();
+  const token = decodeURIComponent(v.cookie.split('=')[1]);
+  const c1 = await core.sessions.challenge('demo', token);
+  const c2 = await core.sessions.challenge('demo', token);
+  const [r1, r2] = await Promise.all([
+    core.sessions.refresh('demo', token, { nonce: c1.nonce, signature: await v.sign(`refresh\n${c1.nonce}`), ctx: { ua: UA, ip: v.ip } }),
+    core.sessions.refresh('demo', token, { nonce: c2.nonce, signature: await v.sign(`refresh\n${c2.nonce}`), ctx: { ua: UA, ip: v.ip } }),
+  ]);
+  assert.equal([r1, r2].filter((r) => r.ok).length, 1);
+  assert.equal([r1, r2].find((r) => !r.ok).reason, 'superseded');
+});
+
+test('an unrelated malformed cookie does not break authentication', async () => {
+  const v = await victim();
+  v.cookie = `progress=100%; ${v.cookie}`;
+  assert.equal((await v.req('/api/me')).status, 200);
+});
+
+test('abandoned sessions are retired by the sweeper and leave the active count', async () => {
+  const b = await new Browser({ ip: '203.0.113.200' }).init();
+  await b.login();
+  const id = (await core.store.listSessions({ active: true })).at(-1).id;
+  advance(core.config.accessTtlSec + core.config.refreshGraceSec + 1);
+  await core.store.sweep(now, core.config);
+  const s = await core.store.getSession(id);
+  assert.equal(s.revokeReason, 'abandoned');
+  assert.ok(!(await core.store.listSessions({ active: true })).some((x) => x.id === id));
+});
+
 test('KILL SWITCH + console API: admin can see and revoke every session in an app', async () => {
+  const stolen = await victim();                    // raise a fresh hijack alert inside the 24h window
+  const thief = await new Browser().init();
+  thief.cookie = stolen.cookie;
+  advance(601);
+  await thief.refresh();
   const v = await victim();
   const auth = { authorization: `Bearer ${ADMIN_KEY}` };
   const base = `http://127.0.0.1:${coreSrv.address().port}`;

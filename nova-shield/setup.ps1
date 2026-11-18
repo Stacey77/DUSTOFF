@@ -47,7 +47,7 @@ HELIX_SHIELD_APP_KEY=$helix
 HELIX_USERNAME=$HelixUsername
 HELIX_PASSWORD_HASH=$hash
 HELIX_CONSOLE_FILE=$HelixConsoleFile
-"@ | Set-Content -LiteralPath ".env" -Encoding ascii
+"@ | Set-Content -LiteralPath ".env" -Encoding utf8
 
 Write-Host ""
 Write-Host "Nova Shield .env created (kept on this PC only)." -ForegroundColor Green

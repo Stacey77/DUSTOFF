@@ -58,6 +58,13 @@ test('the console redirects to /login without a session', async () => {
   assert.match(res.headers.get('location'), /^\/login\?next=%2F&r=no_session/);
 });
 
+test('a non-ASCII username is a clean 401, not a crash', async () => {
+  const { jwk } = await newKey();
+  const res = await fetch(`${HELIX}/login`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '198.51.100.2' },
+    body: JSON.stringify({ username: 'staceé', password: PASSWORD, publicKeyJwk: jwk }) });
+  assert.equal(res.status, 401);
+});
+
 test('wrong password is refused', async () => {
   assert.equal((await login('wrong password!!', '198.51.100.1')).status, 401);
 });

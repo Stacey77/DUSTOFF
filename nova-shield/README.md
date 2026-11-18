@@ -16,7 +16,7 @@ Nova Digitus Designs LLC. Hijack-proof sessions and self-destruct tokens, built 
 | `demo/` | A sample app wired up end to end |
 | `apps/helix/` | **HELIX pilot**: the HELIX Console served behind a Shield sign-in, with a live Shield badge and kill-switch kick-out |
 | `setup.ps1` | One-command Windows setup: makes `.env` with fresh keys (kept on your PC) |
-| `test/` | 25 tests: 18 attack scenarios plus 7 for the HELIX pilot |
+| `test/` | 32 tests: attack scenarios, race conditions, app isolation, and the HELIX pilot |
 
 ## How it works
 
@@ -28,9 +28,9 @@ Browser (SDK + device key) ──cookie──▶ Your app (middleware) ──app
 2. **Cookie:** `__Host-` prefixed, HttpOnly, Secure and SameSite. It holds an opaque token that lives for 10 minutes. Core stores only its hash.
 3. **Refresh:** Core sends a 60-second nonce, and the browser signs it with the device key to get a rotated token. A copied cookie can't sign, so the session is revoked.
 4. **Rotation replay:** if an old token shows up more than 10 seconds after rotation, it was stolen, so the whole session is revoked.
-5. **Signed routes** (`protect({ proof: true })`): every request carries a signature that self-destructs after 60 seconds and works only once.
+5. **Signed routes** (`protect({ proof: true })`): every request carries a signature over the time, a random nonce, the method and the path. It self-destructs after 60 seconds and works only once, even if someone re-encodes or re-signs it.
 6. **Risk engine:** a new browser means step-up MFA. A new browser on a new network, or a new network in a new country, means revoke.
-7. **Step-up** (`protect({ stepUp: 300 })`): sensitive actions need a passkey or MFA within the last 5 minutes.
+7. **Step-up** (`protect({ stepUp: 300 })`): sensitive actions need a passkey or MFA within the last 5 minutes. A password-only login doesn't count.
 8. **Self-destruct vault:** `api`, `magic-link`, `reset-link`, `oauth-code`, `download`, `export`, `payment` and `share` tokens. Each is short-lived, can be single-use, and can be locked to a session, a network or exact data (such as a payment amount). A token presented in the wrong place destroys itself.
 
 ## Run it on Windows (PowerShell)
@@ -41,7 +41,7 @@ Requires Node 20 or later.
 # 1. Unzip and install
 Expand-Archive -Path "$env:USERPROFILE\Downloads\nova-shield.zip" -DestinationPath "$env:USERPROFILE\Projects" -Force; Set-Location "$env:USERPROFILE\Projects\nova-shield"; npm install
 
-# 2. Run the attack tests (should say: pass 18, fail 0)
+# 2. Run the tests (should say: pass 32, fail 0)
 npm test
 
 # 3. Create .env with fresh random keys (.env stays on this machine; it's in .gitignore)
@@ -100,7 +100,8 @@ app.use(shield.routes());                                   // SDK + refresh end
 
 app.post('/login', async (req, res) => {
   // ...check the password / passkey yourself first...
-  await shield.startSession(req, res, { userId: user.id, publicKeyJwk: req.body.publicKeyJwk });
+  // mfa: true only if this login itself checked a passkey/MFA; otherwise stepUp routes ask for one
+  await shield.startSession(req, res, { userId: user.id, publicKeyJwk: req.body.publicKeyJwk, mfa: false });
   res.json({ ok: true });
 });
 

@@ -3,7 +3,8 @@ import { readFileSync, existsSync } from 'node:fs';
 /** Load KEY=value lines from a local .env file without overriding real env vars. */
 export function loadDotEnv(path = '.env') {
   if (!existsSync(path)) return;
-  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+  // Strip a UTF-8 byte-order mark (Windows PowerShell 5.1 writes one with -Encoding utf8).
+  for (const line of readFileSync(path, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/)) {
     const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
     if (!m) continue;
     let value = m[2];

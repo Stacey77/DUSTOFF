@@ -1,7 +1,7 @@
 import express from 'express';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
+import { scrypt as scryptCb, timingSafeEqual, createHash } from 'node:crypto';
 import { promisify } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
@@ -66,7 +66,9 @@ export function createHelixApp({
     const ip = req.ip;
     if (tooMany(ip)) return res.status(429).json({ error: 'too_many_attempts' });
     const { username: u, password, publicKeyJwk } = req.body || {};
-    const userOk = typeof u === 'string' && u.length === username.length && timingSafeEqual(Buffer.from(u), Buffer.from(username));
+    // Compare fixed-length digests so any input (including non-ASCII) is a clean yes/no, never a throw.
+    const digest = (v) => createHash('sha256').update(String(v)).digest();
+    const userOk = typeof u === 'string' && timingSafeEqual(digest(u), digest(username));
     const passOk = await checkPassword(password, passwordHash);
     if (!userOk || !passOk) { recordFail(ip); return res.status(401).json({ error: 'bad_credentials' }); }
     fails.delete(ip);
