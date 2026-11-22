@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova Digitus Designs — Targeted AI for Engineering & Operations</title>
+<meta name="description" content="Targeted AI solutions for engineering and operations teams, backed by a proprietary library of 100+ AI architectures. Engineering Orchestrator, AI Swarm Problem Solver, AI SDR Agent Fleet.">
+<style>
+:root{
+  --bg:#0b1020;--bg2:#111833;--card:#151d3d;--line:#25305c;
+  --ink:#f3f5fb;--ink2:#c3c9de;--mute:#97a0bf;
+  --acc:#5ee1c4;--acc2:#7aa2ff;--warn:#ffcf70;
+  --r:14px;--max:1120px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+/* nav */
+nav{position:sticky;top:0;z-index:10;background:rgba(11,16,32,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
+.chip{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:grid;place-items:center;color:#0b1020;font-weight:800;font-size:14px}
+.links{display:flex;gap:28px;font-size:14px;color:var(--ink2)}
+.links a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:10px;font-weight:600;font-size:15px;transition:transform .15s,box-shadow .15s}
+.btn-p{background:var(--acc);color:#07131a}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(94,225,196,.25)}
+.btn-g{border:1px solid var(--line);color:var(--ink)}
+.btn-g:hover{border-color:var(--acc2)}
+nav .btn{padding:9px 16px;font-size:14px}
+/* hero */
+.hero{padding:96px 0 72px;background:radial-gradient(900px 400px at 75% 0%,rgba(122,162,255,.16),transparent 70%),radial-gradient(700px 360px at 10% 20%,rgba(94,225,196,.10),transparent 70%)}
+.eyebrow{display:inline-block;font-size:13px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--acc);margin-bottom:18px}
+h1{font-size:clamp(34px,5.2vw,58px);line-height:1.08;letter-spacing:-1px;max-width:900px}
+h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:clamp(17px,2vw,20px);color:var(--ink2);max-width:720px;margin:22px 0 34px}
+.cta{display:flex;gap:14px;flex-wrap:wrap}
+.proof{display:flex;gap:40px;flex-wrap:wrap;margin-top:56px;padding-top:28px;border-top:1px solid var(--line)}
+.proof div{font-size:14px;color:var(--mute)}
+.proof b{display:block;font-size:22px;color:var(--ink);margin-bottom:2px}
+/* sections */
+section{padding:88px 0}
+.alt{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+h2{font-size:clamp(28px,3.6vw,40px);letter-spacing:-.6px;line-height:1.15;margin-bottom:14px}
+.lead{color:var(--ink2);max-width:680px;font-size:18px;margin-bottom:48px}
+/* products */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.prod{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:30px;display:flex;flex-direction:column;transition:border-color .2s,transform .2s}
+.prod:hover{border-color:var(--acc);transform:translateY(-3px)}
+.tag{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--acc2);margin-bottom:14px}
+.prod h3{font-size:22px;margin-bottom:10px}
+.prod .prob{color:var(--warn);font-size:14px;font-weight:600;margin-bottom:12px}
+.prod p{color:var(--ink2);font-size:15px}
+.prod ul{list-style:none;margin:18px 0 24px;font-size:14px;color:var(--ink2)}
+.prod li{padding:7px 0 7px 24px;position:relative;border-top:1px solid var(--line)}
+.prod li:before{content:"";position:absolute;left:4px;top:15px;width:8px;height:8px;border-radius:2px;background:var(--acc)}
+.prod .who{margin-top:auto;font-size:13px;color:var(--mute)}
+.prod .btn{margin-top:18px;justify-content:center}
+/* accelerator */
+.split{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center}
+.steps{display:grid;gap:14px}
+.step{display:flex;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.num{flex:0 0 36px;height:36px;border-radius:50%;border:1px solid var(--acc);color:var(--acc);display:grid;place-items:center;font-weight:700}
+.step h4{font-size:16px;margin-bottom:4px}
+.step p{font-size:14px;color:var(--ink2)}
+.lib{background:linear-gradient(160deg,var(--card),var(--bg));border:1px solid var(--line);border-radius:var(--r);padding:34px}
+.lib .big{font-size:64px;font-weight:800;line-height:1;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lib .cap{font-size:15px;color:var(--ink2);margin:10px 0 24px}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pills span{font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--ink2)}
+/* engage */
+.tier{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:30px}
+.tier.hl{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
+.tier .step-n{font-size:13px;color:var(--mute);margin-bottom:8px}
+.tier h3{font-size:21px;margin-bottom:8px}
+.tier p{font-size:15px;color:var(--ink2)}
+.note{margin-top:28px;font-size:14px;color:var(--mute);max-width:760px}
+/* final */
+.final{text-align:center}
+.final .lead{margin:0 auto 34px}
+.final .cta{justify-content:center}
+footer{border-top:1px solid var(--line);padding:36px 0;font-size:14px;color:var(--mute)}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+footer a:hover{color:var(--ink)}
+@media(max-width:900px){
+  .grid3,.split{grid-template-columns:1fr}
+  .links{display:none}
+  .hero{padding:64px 0 48px}
+  section{padding:64px 0}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="#" class="brand"><span class="chip">ND</span>Nova Digitus Designs</a>
+    <div class="links">
+      <a href="#solutions">Solutions</a>
+      <a href="#how">How we build</a>
+      <a href="#engage">Engage</a>
+    </div>
+    <a class="btn btn-p" href="https://cal.com/stacey-williams-5enqex" target="_blank" rel="noopener">Book a call</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">AI for engineering &amp; operations teams</span>
+    <h1>Targeted AI solutions for engineering and operations, <span>backed by a proprietary library of 100+ AI architectures.</span></h1>
+    <p class="sub">We focus on three problems that cost operating teams the most: coordinating engineering work, solving complex multi-variable problems, and filling the sales pipeline. Then we build to fit your data and the tools you already use.</p>
+    <div class="cta">
+      <a class="btn btn-p" href="https://cal.com/stacey-williams-5enqex" target="_blank" rel="noopener">Book a free strategy call →</a>
+      <a class="btn btn-g" href="#solutions">See the three solutions</a>
+    </div>
+    <div class="proof">
+      <div><b>3</b>Core solutions</div>
+      <div><b>100+</b>AI architectures in our library</div>
+      <div><b>Your data</b>Built on your systems, not a template</div>
+    </div>
+  </div>
+</header>
+
+<section id="solutions">
+  <div class="wrap">
+    <h2>Three solutions. Built to deploy.</h2>
+    <p class="lead">We don't sell a catalog. We bring three proven systems and adapt them to your environment.</p>
+    <div class="grid3">
+
+      <article class="prod">
+        <div class="tag">Solution 01</div>
+        <h3>Engineering Orchestrator</h3>
+        <div class="prob">Problem: engineering work stalls between teams, tools and handoffs.</div>
+        <p>An AI coordination layer that plans, routes and tracks engineering work across your team and your existing stack.</p>
+        <ul>
+          <li>Breaks projects into tracked, assignable work</li>
+          <li>Connects to the tools your team already uses</li>
+          <li>Surfaces blockers before they cost a sprint</li>
+        </ul>
+        <div class="who">For: engineering firms, manufacturers, technical operations</div>
+        <a class="btn btn-g" href="https://cal.com/stacey-williams-5enqex" target="_blank" rel="noopener">Discuss a pilot</a>
+      </article>
+
+      <article class="prod">
+        <div class="tag">Solution 02</div>
+        <h3>AI Swarm Problem Solver</h3>
+        <div class="prob">Problem: complex operational problems with too many variables for one analyst.</div>
+        <p>A team of specialized AI agents that splits a hard problem into parts, works them in parallel and returns one reasoned recommendation.</p>
+        <ul>
+          <li>Many specialist agents work the problem in parallel</li>
+          <li>Reasoning you can review, with human sign-off</li>
+          <li>Logistics, scheduling, root-cause and planning problems</li>
+        </ul>
+        <div class="who">For: logistics, supply chain, utility and network operations</div>
+        <a class="btn btn-g" href="https://cal.com/stacey-williams-5enqex" target="_blank" rel="noopener">Discuss a pilot</a>
+      </article>
+
+      <article class="prod">
+        <div class="tag">Solution 03</div>
+        <h3>AI SDR Agent Fleet</h3>
+        <div class="prob">Problem: the pipeline is thin because nobody has time for outreach.</div>
+        <p>A fleet of AI sales-development agents that research prospects, draft personalized outreach and track replies, with you approving what goes out.</p>
+        <ul>
+          <li>Prospect research and list building</li>
+          <li>Personalized first touches and follow-ups</li>
+          <li>Reply tracking and handoff to your team</li>
+        </ul>
+        <div class="who">For: B2B service firms and growing sales teams</div>
+        <a class="btn btn-g" href="https://cal.com/stacey-williams-5enqex" target="_blank" rel="noopener">Discuss a pilot</a>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section id="how" class="alt">
+  <div class="wrap split">
+    <div>
+      <h2>We don't build from scratch. We build from leverage.</h2>
+      <p class="lead" style="margin-bottom:32px">Every engagement draws on our internal library of proven AI architectures, including agent swarms, orchestration brains, memory systems and data pipelines. You get a custom system without paying for months of groundwork.</p>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><div><h4>Diagnose</h4><p>We map your workflow, data and tools on a free strategy call.</p></div></div>
+        <div class="step"><div class="num">2</div><div><h4>Assemble</h4><p>We pull the right architectures from the library and fit them to your stack.</p></div></div>
+        <div class="step"><div class="num">3</div><div><h4>Pilot</h4><p>We run it on your real data with your team before anything scales.</p></div></div>
+        <div class="step"><div class="num">4</div><div><h4>Operate</h4><p>We maintain, tune and extend it monthly so it keeps fitting your business.</p></div></div>
+      </div>
+    </div>
+    <div class="lib">
+      <div class="big">100+</div>
+      <div class="cap">AI architectures built and maintained in-house. This is our internal accelerator, not a menu.</div>
+      <div class="pills">
+        <span>Agent swarms</span><span>Orchestration brains</span><span>Multi-LLM routing</span>
+        <span>Memory &amp; RAG</span><span>Network diagnostics</span><span>Market data engines</span>
+        <span>3D &amp; simulation</span><span>Voice agents</span><span>Secure transport</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="engage">
+  <div class="wrap">
+    <h2>How we work together</h2>
+    <p class="lead">Start small, prove it on your data, then scale.</p>
+    <div class="grid3">
+      <div class="tier"><div class="step-n">Step 1</div><h3>Strategy Session</h3><p>A focused working session to pick the one problem worth solving first and scope the fit.</p></div>
+      <div class="tier hl"><div class="step-n">Step 2</div><h3>Custom AI Pilot</h3><p>One of the three solutions, adapted and deployed on your data and tools, with a defined scope and timeline.</p></div>
+      <div class="tier"><div class="step-n">Step 3</div><h3>Monthly Retainer</h3><p>Ongoing operation, tuning and new capabilities as your needs grow.</p></div>
+    </div>
+    <p class="note">Booking a call is always free. Pricing is scoped after discovery. Every system is built around your own data and existing tools; results depend on your environment, and we don't promise outcomes we can't measure with you.</p>
+  </div>
+</section>
+
+<section class="alt final">
+  <div class="wrap">
+    <h2>Pick the problem. We'll bring the system.</h2>
+    <p class="lead">Thirty minutes, no charge. We'll tell you plainly whether one of our three solutions fits.</p>
+    <div class="cta"><a class="btn btn-p" href="https://cal.com/stacey-williams-5enqex" target="_blank" rel="noopener">Book a free strategy call →</a></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 Nova Digitus Designs LLC · Southaven, Mississippi</div>
+    <div><a href="https://www.linkedin.com/in/stacey-williams-186b09113" target="_blank" rel="noopener">LinkedIn</a> · <a href="https://cal.com/stacey-williams-5enqex" target="_blank" rel="noopener">Book a call</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
