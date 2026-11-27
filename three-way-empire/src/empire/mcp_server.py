@@ -28,7 +28,8 @@ TOOL_NAMES = (
 )
 # Tools whose ``tenant_id`` is forced to the caller's tenant (never caller-chosen).
 TENANT_BOUND = frozenset({"foundry_scaffold_app", "agent_run", "knowledge_add",
-                          "knowledge_search", "knowledge_ask"})
+                          "knowledge_search", "knowledge_ask", "factory_deploy",
+                          "factory_teardown", "platform_snapshot"})
 
 
 def build_tools(p: EmpirePlatform) -> dict[str, Callable[..., Any]]:
@@ -48,12 +49,20 @@ def build_tools(p: EmpirePlatform) -> dict[str, Callable[..., Any]]:
         return [x.to_dict() for x in p.factory.pools.values()]
 
     def factory_deploy(app_id: str, environment: str = "dev",
-                       pool: str = "local-cpu", cpus: int = 1) -> dict[str, Any]:
+                       pool: str = "local-cpu", cpus: int = 1,
+                       tenant_id: str | None = None) -> dict[str, Any]:
         """Deploy an app to dev/staging (Podman) or prod (Rancher)."""
-        return p.factory.deploy(app_id, environment, pool, cpus).to_dict()
+        if tenant_id is not None and p.foundry.get(app_id).tenant_id != tenant_id:
+            raise PermissionError(f"app {app_id} does not belong to this tenant")
+        return p.factory.deploy(app_id, environment, pool, cpus,
+                                tenant_id=tenant_id).to_dict()
 
-    def factory_teardown(deployment_id: str) -> dict[str, Any]:
+    def factory_teardown(deployment_id: str,
+                         tenant_id: str | None = None) -> dict[str, Any]:
         """Stop a deployment and release its capacity."""
+        dep = p.factory.deployments.get(deployment_id)
+        if tenant_id is not None and (dep is None or dep.tenant_id != tenant_id):
+            raise PermissionError(f"deployment {deployment_id} does not belong to this tenant")
         return p.factory.teardown(deployment_id).to_dict()
 
     def studio_list_assistants() -> list[dict[str, Any]]:
@@ -65,9 +74,9 @@ def build_tools(p: EmpirePlatform) -> dict[str, Callable[..., Any]]:
         """Open a Gitea-backed IDE/CDE coding session."""
         return p.studio.open_session(repo, assistant, kind).to_dict()
 
-    def platform_snapshot() -> dict[str, Any]:
-        """Full platform snapshot (loadable by nova-cockpit.html)."""
-        return p.snapshot()
+    def platform_snapshot(tenant_id: str | None = None) -> dict[str, Any]:
+        """Platform snapshot; a tenant only ever sees its own slice."""
+        return p.snapshot() if tenant_id is None else p.tenant_snapshot(tenant_id)
 
     def agent_run(goal: str, tenant_id: str | None = None) -> dict[str, Any]:
         """Run the plan->act->check agent on a goal."""

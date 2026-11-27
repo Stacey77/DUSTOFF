@@ -105,6 +105,23 @@ class EmpirePlatform:
             "pools": lambda _a: [p.to_dict() for p in self.factory.pools.values()],
         }
 
+    def tenant_snapshot(self, tenant_id: str) -> dict[str, Any]:
+        """What one tenant may see: its own apps, deployments and record only."""
+        ok, _ = self.audit.verify()
+        apps = [a for a in self.foundry.apps.values() if a.tenant_id == tenant_id]
+        deps = [d for d in self.factory.deployments.values() if d.tenant_id == tenant_id]
+        me = self.onboarding.tenants.get(tenant_id)
+        return {
+            "pillars": {
+                "foundry": {"blueprints": len(self.foundry.blueprints), "apps": len(apps)},
+                "factory": {"pools": [{"name": p.name, "free_cpus": p.free_cpus}
+                                      for p in self.factory.pools.values()],
+                            "deployments": len(deps)},
+            },
+            "tenant": me.to_dict() if me else None,
+            "audit": {"chain_ok": ok},
+        }
+
     def snapshot(self) -> dict[str, Any]:
         ok, bad = self.audit.verify()
         return {

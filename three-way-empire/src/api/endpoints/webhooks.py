@@ -6,6 +6,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from src.webhooks.dispatcher import UnsafeWebhookURL
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["webhooks"])
@@ -30,7 +32,10 @@ async def register_webhook(
     body: WebhookRegistration, request: Request
 ) -> dict[str, Any]:
     dispatcher = _get_dispatcher(request)
-    webhook_id = dispatcher.register(url=body.url, events=body.events)
+    try:
+        webhook_id = dispatcher.register(url=body.url, events=body.events)
+    except UnsafeWebhookURL as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"webhook_id": webhook_id, "url": body.url, "events": body.events}
 
 

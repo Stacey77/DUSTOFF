@@ -174,7 +174,8 @@ class OnboardingFlow:
     def _do_mcp_enabled(self, t: Tenant) -> tuple[None, dict[str, Any]]:
         from src.empire.mcp_server import TOOL_NAMES
 
-        wanted = t.proposal.mcp_tools or list(TOOL_NAMES)
+        # None means the default (all tools); an explicit empty list means none.
+        wanted = list(TOOL_NAMES) if t.proposal.mcp_tools is None else t.proposal.mcp_tools
         unknown = sorted(set(wanted) - set(TOOL_NAMES))
         if unknown:
             raise ValueError(f"unknown MCP tools: {unknown}")
