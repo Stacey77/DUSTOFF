@@ -77,3 +77,35 @@ def test_public_webhook_target_allowed_and_override(monkeypatch: pytest.MonkeyPa
     assert WebhookDispatcher().register("https://example.com/hook", ["ping"])
     monkeypatch.setenv("WEBHOOK_ALLOW_PRIVATE", "1")
     check_webhook_url("http://127.0.0.1/hook", resolve=True)
+
+
+def test_recurring_invoice_bills_only_its_own_month() -> None:
+    from src.empire.metering import PLANS, Metering, current_period
+
+    m = Metering()
+    tier = next(t for t, plan in PLANS.items() if plan.recurring)
+    m.open_account("ten_r", tier)
+    acct = m.accounts["ten_r"]
+    acct.usage["agent_run"] = 999_999          # old month's usage
+    acct.periods["2026-10"] = {"agent_run": 999_999}
+    nov = m.invoice("ten_r", "2099-01")
+    assert nov["usage"] == {} and len(nov["lines"]) == 1
+    oct_ = m.invoice("ten_r", "2026-10")
+    assert any("overage" in line["description"] for line in oct_["lines"])
+    m.record("ten_r", "agent_run", 3)
+    assert m.accounts["ten_r"].periods[current_period()]["agent_run"] == 3
+
+
+def test_metering_periods_survive_restart(tmp_path) -> None:
+    from src.empire.state import load, save
+
+    p = EmpirePlatform()
+    from src.empire.metering import PLANS
+
+    p.metering.open_account("ten_s", next(t for t, pl in PLANS.items() if pl.recurring))
+    p.metering.record("ten_s", "agent_run", 2)
+    path = tmp_path / "state.json"
+    save(p, path)
+    q = EmpirePlatform()
+    load(q, path)
+    assert q.metering.accounts["ten_s"].periods == p.metering.accounts["ten_s"].periods

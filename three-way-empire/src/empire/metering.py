@@ -46,7 +46,13 @@ PLANS: dict[Tier, Plan] = {
 class Account:
     tenant_id: str
     tier: Tier
-    usage: dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    usage: dict[str, int] = field(default_factory=lambda: defaultdict(int))  # lifetime
+    # Usage per UTC billing month ("YYYY-MM"), used for recurring invoices.
+    periods: dict[str, dict[str, int]] = field(default_factory=dict)
+
+
+def current_period() -> str:
+    return datetime.now(UTC).strftime("%Y-%m")
 
 
 class Metering:
@@ -63,7 +69,10 @@ class Metering:
             raise ValueError("qty must be >= 0")
         if tenant_id not in self.accounts:
             raise KeyError(f"no metering account for {tenant_id!r}")
-        self.accounts[tenant_id].usage[metric] += qty
+        acct = self.accounts[tenant_id]
+        acct.usage[metric] += qty
+        bucket = acct.periods.setdefault(current_period(), {})
+        bucket[metric] = bucket.get(metric, 0) + qty
 
     def change_tier(self, tenant_id: str, tier: Tier | str) -> Account:
         acct = self.accounts[tenant_id]
@@ -73,12 +82,15 @@ class Metering:
     def invoice(self, tenant_id: str, period: str | None = None) -> dict[str, Any]:
         acct = self.accounts[tenant_id]
         plan = PLANS[acct.tier]
+        period = period or current_period()
+        # Recurring plans bill one month's usage; one-time plans bill all usage.
+        used_map = acct.periods.get(period, {}) if plan.recurring else dict(acct.usage)
         lines: list[dict[str, Any]] = [{
             "description": f"{plan.tier.value.title()} "
                            f"{'(monthly)' if plan.recurring else '(one-time)'}",
             "qty": 1, "unit_usd": plan.base_usd, "amount_usd": plan.base_usd,
         }]
-        for metric, used in sorted(acct.usage.items()):
+        for metric, used in sorted(used_map.items()):
             over = max(0, used - plan.included.get(metric, 0))
             rate = plan.overage_usd.get(metric, 0.0)
             if over and rate:
@@ -88,9 +100,10 @@ class Metering:
         return {
             "tenant_id": tenant_id,
             "tier": acct.tier.value,
-            "period": period or datetime.now(UTC).strftime("%Y-%m"),
+            "period": period,
             "status": "draft",
-            "usage": dict(acct.usage),
+            "usage": dict(used_map),
+            "lifetime_usage": dict(acct.usage),
             "included": plan.included,
             "lines": lines,
             "total_usd": total,

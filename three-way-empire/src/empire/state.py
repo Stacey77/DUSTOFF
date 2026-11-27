@@ -68,7 +68,8 @@ def dump(p: EmpirePlatform) -> dict[str, Any]:
         "deployments": [d.to_dict() for d in p.factory.deployments.values()],
         "sessions": [x.to_dict() for x in p.studio.sessions.values()],
         "accounts": [
-            {"tenant_id": a.tenant_id, "tier": a.tier.value, "usage": dict(a.usage)}
+            {"tenant_id": a.tenant_id, "tier": a.tier.value, "usage": dict(a.usage),
+             "periods": {k: dict(v) for k, v in a.periods.items()}}
             for a in p.metering.accounts.values()
         ],
         "skills": p.skills.dump(),
@@ -112,6 +113,8 @@ def load_into(p: EmpirePlatform, data: dict[str, Any]) -> None:
     for a in data.get("accounts", []):
         acct = p.metering.open_account(a["tenant_id"], a["tier"])
         acct.usage.update(a["usage"])
+        # Older state has lifetime counters only; they are not assigned to any month.
+        acct.periods = {k: dict(v) for k, v in a.get("periods", {}).items()}
 
     for t in data.get("tenants", []):
         pr = t["proposal"]
