@@ -170,7 +170,8 @@ def onboard(body: ProposalRequest, request: Request) -> dict[str, Any]:
         try:
             t, key = p.onboarding.run_to_live(t.id)
         except OnboardingError as exc:
-            raise HTTPException(409, {"tenant": t.to_dict(), "error": str(exc)}) from exc
+            raise HTTPException(409, {"tenant": t.to_dict(), "error": str(exc),
+                                      "tenant_api_key": exc.api_key}) from exc
     return {"tenant": t.to_dict(), "tenant_api_key": key}
 
 

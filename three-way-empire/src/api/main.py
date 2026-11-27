@@ -32,10 +32,10 @@ from src.api.middleware.metrics import MetricsMiddleware, metrics_response
 from src.api.middleware.rate_limit import RateLimitMiddleware
 from src.cde.cde_agent import CDEAgent
 from src.config import get_settings
+from src.empire.platform import EmpirePlatform
 from src.execution.execution_agent import ExecutionAgent
 from src.execution.execution_engine import ExecutionEngine
 from src.ide.ide_agent import IDEAgent
-from src.empire.platform import EmpirePlatform
 from src.llm.provider import LLMProvider, create_llm
 from src.logging_config import configure_logging
 from src.platform.developer_portal import DeveloperPortal
@@ -235,6 +235,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Auth: key store and JWT manager
     from src.auth.jwt_manager import JWTManager
     from src.auth.key_store import KeyStore
+
+    # KeyStore and JWT_SECRET read os.environ; Settings alone reads .env.
+    # Load .env into the process (never overriding real env vars) so keys
+    # saved there actually switch authentication on.
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv(override=False)
+    except ImportError:  # pragma: no cover - python-dotenv is a requirement
+        pass
 
     key_store = KeyStore()
     app.state.key_store = key_store

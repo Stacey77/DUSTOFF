@@ -339,7 +339,10 @@ class ScalingEngine:
 
     async def run_loop(self, interval_s: float, stop: asyncio.Event) -> None:
         while not stop.is_set():
-            await asyncio.to_thread(self.tick)
+            out = await asyncio.to_thread(self.tick)
+            if out["dispatched"] or out["scale"]["spawned"] or out["scale"]["reaped"]:
+                # Finished jobs and their billing must survive a crash.
+                await asyncio.to_thread(self.p.persist)
             try:
                 await asyncio.wait_for(stop.wait(), timeout=interval_s)
             except TimeoutError:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 from pathlib import Path
 from typing import Any
@@ -58,7 +59,10 @@ def create_agent(
     cls = _AGENT_CLASSES.get(config.agent_type)
     if cls is None:
         raise ValueError(f"No agent class registered for type: {config.agent_type}")
-    agent = cls(config=config, execution_agent=execution_agent, llm=llm)
+    kwargs: dict[str, Any] = {"config": config, "execution_agent": execution_agent}
+    if "llm" in inspect.signature(cls.__init__).parameters:
+        kwargs["llm"] = llm
+    agent = cls(**kwargs)
     logger.info("Factory created agent '%s'", config.name)
     return agent
 

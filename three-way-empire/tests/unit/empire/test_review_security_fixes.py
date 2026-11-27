@@ -109,3 +109,73 @@ def test_metering_periods_survive_restart(tmp_path) -> None:
     q = EmpirePlatform()
     load(q, path)
     assert q.metering.accounts["ten_s"].periods == p.metering.accounts["ten_s"].periods
+
+
+def test_failed_onboarding_still_returns_issued_key() -> None:
+    from src.empire.onboarding import OnboardingError
+
+    p = EmpirePlatform()
+    for pool in p.factory.pools.values():  # no capacity: the deploy stage fails
+        pool.allocated_cpus = pool.cpus
+    t = p.onboarding.accept(Proposal(client_name="Full Box", contact_email="f@f.test"))
+    with pytest.raises(OnboardingError) as info:
+        p.onboarding.run_to_live(t.id)
+    key = info.value.api_key
+    assert key and p.tenant_for_key(key) == t.id
+
+
+@pytest.mark.parametrize("agent_type", ["kally", "cde", "ide"])
+def test_agent_types_without_llm_param_register(agent_type: str) -> None:
+    from src.agents.agent_factory import create_agent
+    from src.agents.base_agent import AgentConfig, AgentType
+
+    agent = create_agent(AgentConfig(name=f"t-{agent_type}", agent_type=AgentType(agent_type)),
+                         llm=None)
+    assert agent is not None
+
+
+def test_agent_websocket_requires_credentials_when_keys_configured() -> None:
+    from fastapi.testclient import TestClient
+    from starlette.websockets import WebSocketDisconnect
+
+    from src.api.main import app
+
+    with TestClient(app) as c:
+        from src.auth.key_store import KeyRole
+
+        raw, made = app.state.key_store.create_key("ws-test", KeyRole.ADMIN)
+        with pytest.raises(WebSocketDisconnect) as info, \
+                c.websocket_connect("/api/v1/agents/nope/ws") as ws:
+            ws.receive_json()
+        assert info.value.code == 1008
+        with c.websocket_connect(f"/api/v1/agents/nope/ws?api_key={raw}") as ws:
+            assert "not found" in ws.receive_json()["error"]
+        app.state.key_store.revoke_key(made.key_id)
+
+
+def test_background_scaling_tick_persists_finished_jobs(tmp_path) -> None:
+    import asyncio
+    import json
+
+    path = tmp_path / "state.json"
+    p = EmpirePlatform(state_path=str(path))
+    t = p.onboarding.accept(Proposal(client_name="Loop Co", contact_email="l@l.test"))
+    t, _ = p.onboarding.run_to_live(t.id)
+    job = p.scaling.submit(t.id, "summarise the handbook")
+    p.persist()
+
+    async def one_pass() -> None:
+        stop = asyncio.Event()
+        task = asyncio.create_task(p.scaling.run_loop(0.01, stop))
+        for _ in range(200):
+            await asyncio.sleep(0.01)
+            if not p.scaling.queued():
+                break
+        stop.set()
+        await task
+
+    asyncio.run(one_pass())
+    saved = json.loads(path.read_text())
+    assert job.id in json.dumps(saved["scaling"])
+    assert '"queued"' not in json.dumps([j for j in saved["scaling"].get("jobs", [])
+                                         if j.get("id") == job.id])

@@ -9,6 +9,9 @@ services:
       - "8000:8000"
     environment:
       - ENVIRONMENT=development
+      - API_KEY=${API_KEY:-}
+      - API_KEYS=${API_KEYS:-}
+      - JWT_SECRET=${JWT_SECRET:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@postgres:5432/agi_system}
@@ -34,6 +37,9 @@ services:
     environment:
       - ENVIRONMENT=development
       - AGENTS_SERVICE_URL=http://agents-service:8000
+      - API_KEY=${API_KEY:-}
+      - API_KEYS=${API_KEYS:-}
+      - JWT_SECRET=${JWT_SECRET:-}
     depends_on:
       agents-service:
         condition: service_healthy

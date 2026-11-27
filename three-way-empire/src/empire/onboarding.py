@@ -99,7 +99,9 @@ class Tenant:
 
 
 class OnboardingError(RuntimeError):
-    pass
+    """A stage failed. ``api_key`` carries a key already issued in this run, if any."""
+
+    api_key: str | None = None
 
 
 def _slug(name: str) -> str:
@@ -152,7 +154,11 @@ class OnboardingFlow:
         key: str | None = None
         t = self.get(tenant_id)
         while t.stage is not Stage.LIVE:
-            t, k = self.advance(tenant_id)
+            try:
+                t, k = self.advance(tenant_id)
+            except OnboardingError as exc:
+                exc.api_key = key  # the one-time key must still reach the caller
+                raise
             key = key or k
         return t, key
 

@@ -171,6 +171,20 @@ async def stream_agent_task(
     )
 
 
+def _websocket_authorised(websocket: WebSocket) -> bool:
+    key_store = getattr(websocket.app.state, "key_store", None)
+    if key_store is None or not key_store.list_keys():
+        return True  # no keys configured: same dev-mode rule as the HTTP middleware
+    jwt_manager = getattr(websocket.app.state, "jwt_manager", None)
+    auth = websocket.headers.get("authorization", "")
+    token = auth[len("Bearer "):] if auth.startswith("Bearer ") else ""
+    token = token or websocket.query_params.get("token", "")
+    if token and jwt_manager is not None and jwt_manager.verify_token(token):
+        return True
+    raw = websocket.headers.get("x-api-key") or websocket.query_params.get("api_key", "")
+    return bool(raw) and key_store.validate_key(raw) is not None
+
+
 @router.websocket("/{agent_name}/ws")
 async def websocket_agent_task(agent_name: str, websocket: WebSocket) -> None:
     """Stream agent output over a WebSocket connection.
@@ -178,6 +192,13 @@ async def websocket_agent_task(agent_name: str, websocket: WebSocket) -> None:
     The client sends a JSON object ``{"task": "...", "parameters": {...}}``
     and receives text chunks followed by a final ``[DONE]`` message.
     """
+    # APIKeyMiddleware only covers HTTP, so check credentials here before
+    # accepting. Browsers can't set headers on WebSockets, so ``api_key`` and
+    # ``token`` query parameters are accepted too.
+    if not _websocket_authorised(websocket):
+        await websocket.close(code=1008)
+        return
+
     factory = getattr(websocket.app.state, "agent_factory", None)
     agent = factory.get_agent(agent_name) if factory else None
 
