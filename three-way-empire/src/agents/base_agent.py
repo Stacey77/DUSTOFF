@@ -1,0 +1,249 @@
+"""Base agent module defining the abstract agent interface and shared data structures."""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import time
+from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
+class AgentType(str, Enum):
+    """Supported agent types."""
+
+    PLANNING = "planning"
+    RESEARCH = "research"
+    ANALYSIS = "analysis"
+    WRITING = "writing"
+    EXECUTION = "execution"
+    REVIEW = "review"
+    IDE = "ide"
+    CDE = "cde"
+    KALLY = "kally"
+    CODING = "coding"
+    SUMMARIZATION = "summarization"
+
+
+@dataclass
+class AgentConfig:
+    """Configuration for an agent instance."""
+
+    name: str
+    agent_type: AgentType
+    description: str = ""
+    capabilities: list[str] = field(default_factory=list)
+    memory_size: int = 100
+    tools: list[str] = field(default_factory=list)
+    temperature: float = 0.7
+    max_retries: int = 2  # retries on transient task failures
+    circuit_break_threshold: int = 5  # open circuit after N consecutive failures
+
+
+@dataclass
+class AgentMemory:
+    """Per-agent short-term memory store."""
+
+    max_size: int = 100
+    _store: list[dict[str, Any]] = field(default_factory=list)
+
+    def add(self, entry: dict[str, Any]) -> None:
+        """Add an entry, evicting oldest if at capacity."""
+        if len(self._store) >= self.max_size:
+            self._store.pop(0)
+        self._store.append(entry)
+
+    def get_all(self) -> list[dict[str, Any]]:
+        """Return all stored entries."""
+        return list(self._store)
+
+    def clear(self) -> None:
+        """Clear memory."""
+        self._store.clear()
+
+    def __len__(self) -> int:
+        return len(self._store)
+
+
+class BaseAgent(ABC):
+    """Abstract base class for all AGI system agents."""
+
+    def __init__(
+        self,
+        config: AgentConfig,
+        execution_agent: Any | None = None,
+        llm: Any | None = None,
+        persist_memory: bool = False,
+    ) -> None:
+        self.config = config
+        self.execution_agent = execution_agent
+        self.llm = llm  # Optional LangChain chat model
+        self.memory = AgentMemory(max_size=config.memory_size)
+        self._tool_registry: Any | None = None
+        self._task_memory: Any | None = None
+        self._tracker: Any | None = None
+        self._consecutive_failures: int = 0
+        self._circuit_open_until: float = 0.0
+        if persist_memory:
+            try:
+                from src.memory.task_memory import TaskMemory
+
+                self._task_memory = TaskMemory(agent_name=config.name)
+                logger.info("Persistent task memory enabled for '%s'", config.name)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not initialise task memory: %s", exc)
+        logger.info(
+            "Initialised agent '%s' (type=%s, llm=%s)",
+            config.name,
+            config.agent_type,
+            "enabled" if llm is not None else "mock",
+        )
+
+    # ------------------------------------------------------------------
+    # Public interface
+    # ------------------------------------------------------------------
+
+    @abstractmethod
+    async def process_task(self, task: dict[str, Any]) -> dict[str, Any]:
+        """Process a task and return a result dictionary."""
+
+    async def stream_task(self, task: dict[str, Any]) -> AsyncIterator[str]:
+        """Stream task output as text chunks (default: yields full result as one chunk)."""
+        import json
+
+        result = await self.process_task(task)
+        yield json.dumps(result)
+
+    def get_status(self) -> dict[str, Any]:
+        """Return a status snapshot of this agent."""
+        circuit_open = time.time() < self._circuit_open_until
+        return {
+            "name": self.config.name,
+            "type": self.config.agent_type,
+            "memory_usage": len(self.memory),
+            "persistent_memory_size": len(self._task_memory)
+            if self._task_memory
+            else 0,
+            "capabilities": self.config.capabilities,
+            "consecutive_failures": self._consecutive_failures,
+            "circuit_open": circuit_open,
+        }
+
+    async def run_with_retry(self, task: dict[str, Any]) -> dict[str, Any]:
+        """Call process_task with automatic retry and circuit breaker.
+
+        - Opens circuit for 60s after circuit_break_threshold consecutive failures.
+        - Retries up to max_retries times with 0.5s × 2^attempt backoff.
+        """
+        if time.time() < self._circuit_open_until:
+            raise RuntimeError(
+                f"Agent '{self.config.name}' circuit breaker is open — "
+                f"too many consecutive failures"
+            )
+
+        last_exc: Exception | None = None
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                result = await self.process_task(task)
+                self._consecutive_failures = 0
+                return result
+            except Exception as exc:
+                last_exc = exc
+                self._consecutive_failures += 1
+                logger.warning(
+                    "Agent '%s' task attempt %d/%d failed: %s",
+                    self.config.name,
+                    attempt + 1,
+                    self.config.max_retries + 1,
+                    exc,
+                )
+                if self._consecutive_failures >= self.config.circuit_break_threshold:
+                    self._circuit_open_until = time.time() + 60.0
+                    logger.error(
+                        "Agent '%s' circuit breaker opened after %d consecutive failures",
+                        self.config.name,
+                        self._consecutive_failures,
+                    )
+                    raise
+                if attempt < self.config.max_retries:
+                    await asyncio.sleep(0.5 * (2**attempt))
+        raise last_exc  # type: ignore[misc]
+
+    def recall_similar_tasks(self, query: str, k: int = 3) -> list[dict[str, Any]]:
+        """Return past tasks semantically similar to *query* (requires persist_memory=True)."""
+        if self._task_memory is None:
+            return []
+        return self._task_memory.recall(query, k=k)
+
+    def set_tool_registry(self, registry: Any) -> None:
+        """Inject a tool registry for tool access."""
+        self._tool_registry = registry
+
+    def set_token_tracker(self, tracker: Any) -> None:
+        """Inject a TokenTracker so that _invoke_llm() records token usage."""
+        self._tracker = tracker
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _get_tool(self, name: str) -> Any | None:
+        if self._tool_registry is None:
+            return None
+        try:
+            return self._tool_registry.get_tool(name)
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _record_task(self, task: dict[str, Any], result: dict[str, Any]) -> None:
+        self.memory.add({"task": task, "result": result})
+        if self._task_memory is not None:
+            try:
+                self._task_memory.remember(task, result)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Failed to persist task memory: %s", exc)
+
+    async def _invoke_llm(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        task_id: str | None = None,
+    ) -> str | None:
+        """Call the LLM and return the full response, or None if no LLM configured.
+
+        If a token tracker has been injected via ``set_token_tracker()``, usage
+        is recorded after each call.
+        """
+        if self.llm is None:
+            return None
+        try:
+            from src.llm.provider import invoke_llm
+
+            return await invoke_llm(
+                self.llm,
+                system_prompt,
+                user_prompt,
+                agent_name=self.config.name,
+                task_id=task_id,
+                tracker=self._tracker,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("LLM invocation failed: %s", exc)
+            return None
+
+    async def _stream_llm(self, prompt: str) -> AsyncIterator[str]:
+        """Stream tokens from the LLM, or yield nothing if no LLM configured."""
+        if self.llm is None:
+            return
+        try:
+            from src.llm.provider import stream_llm_response
+
+            async for chunk in stream_llm_response(self.llm, prompt):
+                yield chunk
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("LLM streaming failed: %s", exc)
