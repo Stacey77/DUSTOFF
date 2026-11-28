@@ -167,3 +167,14 @@ test('visibleText ignores markup-only changes', async () => {
   assert.equal(a, b);
   assert.equal(a, 'Hello world');
 });
+
+test('delete removes the entry from search and records it in the audit log', () => {
+  const v = new Vault(tmpPath(), { actor: 'tester' });
+  const e = v.add({ title: 'Disposable', body: 'temporary fact' });
+  assert.equal(v.search('temporary').length, 1);
+  v.delete(e.id);
+  assert.equal(v.search('temporary').length, 0);
+  assert.throws(() => v.get(e.id), /No entry/);
+  assert.ok(v.auditLog().some((r) => r.action === 'delete' && r.entry_id === e.id));
+  v.close();
+});
