@@ -231,6 +231,23 @@ export class Vault {
   }
 
   // A fact-checking subagent reports a verdict with evidence.
+  // Human-only (CLI). Permanently removes an entry, its verdicts, and its index row.
+  delete(id) {
+    const row = this.db.prepare('SELECT title FROM entries WHERE id = ?').get(id);
+    if (!row) throw new Error(`No entry with id ${id}.`);
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare('DELETE FROM entries_fts WHERE id = ?').run(id);
+      this.db.prepare('DELETE FROM entries WHERE id = ?').run(id);
+      this.#audit('delete', id, { title: row.title });
+      this.db.exec('COMMIT');
+    } catch (e) {
+      this.db.exec('ROLLBACK');
+      throw e;
+    }
+    return { id, title: row.title, deleted: true };
+  }
+
   recordVerification({ id, verdict, evidence_url = null, note = '', checker = 'unknown' }) {
     if (!VERDICTS.includes(verdict)) throw new Error(`verdict must be one of ${VERDICTS.join(', ')}.`);
     // A "supported" verdict resets the freshness clock, so it must cite evidence.
