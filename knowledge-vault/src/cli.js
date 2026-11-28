@@ -32,6 +32,7 @@ const usage = `knowledge-vault (kv)
   kv check <id>                       fetch source_url and compare to last snapshot
   kv attention                        stale, unverified, disputed, or flagged entries
   kv status
+  kv delete <id> --yes                 permanently remove an entry (human-only)
   kv audit [--limit N]                 who did what, most recent first
   kv backup [--out FILE] [--r2 BUCKET --key NAME]   encrypted snapshot to file and/or R2
   kv restore --from FILE | --r2 BUCKET --key NAME [--to PATH]
@@ -84,6 +85,10 @@ try {
       break;
     case 'status':
       out(vault.status());
+      break;
+    case 'delete':
+      if (!f.yes) throw new Error('Deleting is permanent. Re-run with --yes to confirm.');
+      out(vault.delete(f._[0]));
       break;
     case 'audit':
       out(vault.auditLog({ limit: f.limit ? Number(f.limit) : 50 }));
