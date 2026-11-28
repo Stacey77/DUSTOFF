@@ -1,0 +1,8 @@
+[
+  { "id": "q1", "question": "Is Node 22 an LTS release?", "expect_title": "Node.js 22 is an LTS release line" },
+  { "id": "q2", "question": "Which Node.js version is the current LTS?", "expect_title": "Node.js 18 is the current LTS" },
+  { "id": "q3", "question": "How do I stream model responses with the AI SDK?", "expect_title": "AI SDK streamText" },
+  { "id": "q4", "question": "Where are the Next.js docs?", "expect_title": "Next.js docs entry point" },
+  { "id": "q5", "question": "What is the client rate?", "expect_title": "Client rate", "private": true },
+  { "id": "q6", "question": "How do I configure Kubernetes ingress?", "expect_none": true }
+]
