@@ -1,0 +1,133 @@
+<!doctype html>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Vault Status</title>
+<style>
+/* Layout: a single column of counts above a list of entries.
+   Palette: paper and ink with one signal colour for "needs attention". */
+:root {
+  --bg: #f6f5f1; --fg: #1d1f24; --muted: #6b6f78; --line: #dedbd2;
+  --card: #ffffff; --ok: #2f6f4f; --warn: #9a6400; --bad: #a3322b; --lock: #5b5f66;
+  --display: "Space Grotesk", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15171b; --fg: #eceef2; --muted: #9aa0ab; --line: #2b2f37;
+    --card: #1c1f25; --ok: #6fbf8e; --warn: #e0a84a; --bad: #ef7f74; --lock: #9aa0ab;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15171b; --fg: #eceef2; --muted: #9aa0ab; --line: #2b2f37;
+  --card: #1c1f25; --ok: #6fbf8e; --warn: #e0a84a; --bad: #ef7f74; --lock: #9aa0ab;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 760px; margin: 0 auto; padding-block: 28px 48px; }
+header h1 { font: 600 26px/1.2 var(--display); margin: 0 0 4px; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); }
+.demo {
+  display: inline-block; margin-top: 10px; font-size: 12px; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--muted); border: 1px solid var(--line);
+  border-radius: 4px; padding: 2px 8px;
+}
+.counts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px; margin: 24px 0 28px;
+}
+.count { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.count b { display: block; font: 600 28px/1 var(--display); font-variant-numeric: tabular-nums; }
+.count span { font-size: 13px; color: var(--muted); }
+.count.bad b { color: var(--bad); }
+.count.warn b { color: var(--warn); }
+.count.ok b { color: var(--ok); }
+h2 { font: 600 15px/1.3 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+li {
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px 16px; display: grid; gap: 4px; min-width: 0;
+}
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; justify-content: space-between; }
+.title { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.pill {
+  font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px;
+  border: 1px solid currentColor; white-space: nowrap;
+}
+.disputed { color: var(--bad); }
+.needs_review { color: var(--warn); }
+.fresh { color: var(--ok); }
+.unverified, .locked { color: var(--lock); }
+.meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.meta a { color: inherit; }
+.note { font-size: 13px; color: var(--muted); font-style: italic; }
+footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<main>
+  <header>
+    <h1>Knowledge vault status</h1>
+    <p>What the AI tools can rely on right now, and what needs checking.</p>
+    <span class="demo">Demo vault · sample entries</span>
+  </header>
+
+  <section class="counts" aria-label="Counts by freshness">
+    <div class="count ok"><b>1</b><span>Fresh</span></div>
+    <div class="count bad"><b>1</b><span>Disputed</span></div>
+    <div class="count warn"><b>2</b><span>Needs review</span></div>
+    <div class="count"><b>1</b><span>Unverified</span></div>
+  </section>
+
+  <h2>Entries</h2>
+  <ul>
+    <li>
+      <div class="row">
+        <span class="title">Node.js 18 is the current LTS</span>
+        <span class="pill disputed">Disputed</span>
+      </div>
+      <div class="meta">Tags: node · <a href="https://nodejs.org/en/about/previous-releases">Source</a></div>
+      <div class="note">Fact-checker: the release page lists Node.js 18 as EOL, so the claim is contradicted.</div>
+    </li>
+    <li>
+      <div class="row">
+        <span class="title">AI SDK streamText</span>
+        <span class="pill needs_review">Needs review</span>
+      </div>
+      <div class="meta">Tags: ai-sdk · <a href="https://ai-sdk.dev/docs">Source</a></div>
+      <div class="note">Could not be checked: the proxy blocked the source host.</div>
+    </li>
+    <li>
+      <div class="row">
+        <span class="title">Next.js docs entry point</span>
+        <span class="pill needs_review">Needs review</span>
+      </div>
+      <div class="meta">Tags: nextjs · <a href="https://nextjs.org/docs">Source</a></div>
+      <div class="note">Could not be checked: the proxy blocked the source host.</div>
+    </li>
+    <li>
+      <div class="row">
+        <span class="title">Node.js 22 is an LTS release line</span>
+        <span class="pill fresh">Fresh</span>
+      </div>
+      <div class="meta">Tags: node · <a href="https://nodejs.org/en/about/previous-releases">Source</a></div>
+      <div class="note">Confirmed by the fact-checker against the release table.</div>
+    </li>
+    <li>
+      <div class="row">
+        <span class="title">Client rate</span>
+        <span class="pill locked">Locked</span>
+      </div>
+      <div class="meta">Private entry. Body hidden until a human approves access.</div>
+    </li>
+  </ul>
+
+  <footer>Verdicts recorded by the fact-checker subagent. Private entries are never shown here.</footer>
+</main>
