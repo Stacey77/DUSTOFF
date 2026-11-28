@@ -4,8 +4,7 @@
       "command": "node",
       "args": ["--no-warnings", "src/mcp.js"],
       "env": {
-        "KV_PASSPHRASE": "${KV_PASSPHRASE}",
-        "KV_HOME": "${KV_HOME:-/home/user/.knowledge-vault}"
+        "KV_PASSPHRASE": "${KV_PASSPHRASE}"
       }
     }
   }
